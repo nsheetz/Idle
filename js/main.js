@@ -15,7 +15,7 @@ let debug = (function() {
             enableDamageNumbers: true,
         },
         version: 12,
-        subVersion: 3,
+        subVersion: 4,
     }
 
     let assets = {
@@ -37,9 +37,9 @@ let debug = (function() {
     onEnableDamageNumbersChecked(model.flags.enableDamageNumbers, true);
 
     //todo
-    if(model.modules.zones.zones[Zones.MAIN].player.inventory.length === 0) {
-        model.modules.zones.zones[Zones.MAIN].player.addItem(new Item().generateRandom(Zones.MAIN, null, 0, Item.WEAPON));
-        model.modules.zones.zones[Zones.MAIN].player.addItem(new Item().generateRandom(Zones.MAIN, null, 0, Item.ARMOR));
+    if(model.modules.zones.zones[Zones.MAIN].modules.player.inventory.length === 0) {
+        model.modules.zones.zones[Zones.MAIN].modules.player.addItem(new Item().generateRandom(Zones.MAIN, null, 0, Item.WEAPON));
+        model.modules.zones.zones[Zones.MAIN].modules.player.addItem(new Item().generateRandom(Zones.MAIN, null, 0, Item.ARMOR));
     }
 
     try {
@@ -77,7 +77,7 @@ let debug = (function() {
         }
         document.getElementById("buttonBattle").onclick = e => {
             let zone = model.modules.zones.getFocusedZone();
-            zone.battle.startNewRun(zone.player);
+            zone.modules.battle.startNewRun(zone.modules.player);
         }
         document.getElementById("buttonPause").onclick = function(e) {
             paused = !paused;
@@ -109,21 +109,21 @@ let debug = (function() {
         document.getElementById("buttonToVillage").onclick = function(e) {
             let date = new Date();
             model.modules.menu.createVillage(date, assets.imageVillage, assets.imageVillageLightmap, window.innerWidth, window.innerHeight, () => {
-                let highestWave = model.modules.zones.zones[Zones.MAIN].battle.highestWave;
+                let highestWave = model.modules.zones.zones[Zones.MAIN].modules.battle.highestWave;
                 highestWave = Math.floor(highestWave / 10);
                 if(highestWave === 0)
                     return;
                 
                 model.modules.zones.createNewQuest(highestWave * 10, highestWave + 4);
-                model.modules.zones.zones[Zones.QUEST].player.addItem(new Item().generateRandom(Zones.QUEST, null, 0, Item.WEAPON));
-                model.modules.zones.zones[Zones.QUEST].player.addItem(new Item().generateRandom(Zones.QUEST, null, 0, Item.ARMOR));
+                model.modules.zones.zones[Zones.QUEST].modules.player.addItem(new Item().generateRandom(Zones.QUEST, null, 0, Item.WEAPON));
+                model.modules.zones.zones[Zones.QUEST].modules.player.addItem(new Item().generateRandom(Zones.QUEST, null, 0, Item.ARMOR));
                 model.modules.zones.changeFocusedZone(Zones.QUEST);
             });
         }
 
         document.getElementById("buttonChangeValueWeights").onclick = function(e) {
             let zone = model.modules.zones.getFocusedZone();
-            model.modules.menu.createChangeValueWeights(zone.player, window.innerWidth, window.innerHeight);
+            model.modules.menu.createChangeValueWeights(zone.modules.player, window.innerWidth, window.innerHeight);
         }
 
         document.getElementById("buttonExportSave").onclick = function(e) {
@@ -154,11 +154,11 @@ let debug = (function() {
 
         document.getElementById("buttonInventorySort").onclick = e => {
             let zone = model.modules.zones.getFocusedZone();
-            zone.player.sortInventory();
+            zone.modules.player.sortInventory();
         };
         document.getElementById("buttonInventoryDestroyWeakItems").onclick = e => {
             let zone = model.modules.zones.getFocusedZone();
-            zone.player.destroyWeakItems();
+            zone.modules.player.destroyWeakItems();
         };
 
         document.getElementById("checkboxLowPerformance").onchange = function(e) {
@@ -174,7 +174,7 @@ let debug = (function() {
         document.getElementById("containerProgressRarityChance").onclick = e => {
             let zone = model.modules.zones.getFocusedZone();
 
-            let wave = zone.battle.wave;
+            let wave = zone.modules.battle.wave;
             let startingRarity = Item.getRarityRollStartingRarity(wave);
             let offset = Item.getRarityRollOffset(wave);
 
@@ -202,8 +202,8 @@ let debug = (function() {
 
     try {
         let zone = model.modules.zones.getFocusedZone();
-        document.getElementById("textPlayerHealth").innerHTML = zone.player.health;
-        document.getElementById("textPlayerMaxHealth").innerHTML = zone.player.maxHealth;
+        document.getElementById("textPlayerHealth").innerHTML = zone.modules.player.health;
+        document.getElementById("textPlayerMaxHealth").innerHTML = zone.modules.player.maxHealth;
     } catch(e) {
         console.error(e);
     }
@@ -216,7 +216,7 @@ let debug = (function() {
     function refreshEnemyStats(elem, enemy, zone) {
         let arr = elem != null ? [{elem:elem,enemy:enemy}] : ((() => {
             let arr = [];
-            let enemies = zone.battle.enemies;
+            let enemies = zone.modules.battle.enemies;
             let l = enemies.length;
             for(let i = 0; i < l; i++) {
                 let enemy = enemies[i];
@@ -240,24 +240,24 @@ let debug = (function() {
 
                 switch(elem.dataset["id"]) {
                 case "textDamage":
-                    elem.innerHTML = Utility.prettify(Battle.getDamage(enemy.damage, enemy.stats.str, zone.player.stats.def.total));
+                    elem.innerHTML = Utility.prettify(Battle.getDamage(enemy.damage, enemy.stats.str, zone.modules.player.stats.def.total));
                     break;
                 case "textDamageBase":
                     elem.innerHTML = "(" + Utility.prettify(enemy.damage) + ")";
                     break;
                 case "textSpeed":
-                    elem.innerHTML = Math.ceil(1 / (Battle.getEnemyInterval(enemy.damageSpeed, enemy.stats.agi, zone.player.stats.agi.total) / 1000) * 10) / 10;
+                    elem.innerHTML = Math.ceil(1 / (Battle.getEnemyInterval(enemy.damageSpeed, enemy.stats.agi, zone.modules.player.stats.agi.total) / 1000) * 10) / 10;
                     break;
                 case "textHealth":
                     elem.innerHTML = Utility.prettify(enemy.health) + "/" + Math.ceil(enemy.maxHealth);
                     break;
                 case "textStatCap":
-                    elem.innerHTML = Utility.prettify(Battle.getEnemyStatCeiling(zone.battle.wave, Object.keys(enemy.stats).length));
+                    elem.innerHTML = Utility.prettify(Battle.getEnemyStatCeiling(zone.modules.battle.wave, Object.keys(enemy.stats).length));
                 }
 
                 for(let name in enemy.stats) {
                     if(elem.dataset["id"] === "progress" + name) {
-                        elem.style.transform = Utility.getProgressBarTransformCSS(enemy.stats[name], Battle.getEnemyStatCeiling(zone.battle.wave, Object.keys(enemy.stats).length));
+                        elem.style.transform = Utility.getProgressBarTransformCSS(enemy.stats[name], Battle.getEnemyStatCeiling(zone.modules.battle.wave, Object.keys(enemy.stats).length));
                     }
                 }
             }
@@ -315,6 +315,16 @@ let debug = (function() {
                 }
             }
 
+            if(s.subVersion <= 3) {
+                for(let i = 0; i < s.modules.zones.zones.length; i++) {
+                    let zone = s.modules.zones.zones[i];
+
+                    zone.modules = {};
+                    zone.modules.player = zone.player;
+                    zone.modules.battle = zone.battle;
+                }
+            }
+
             model.modules.zones = new Zones(s.modules.zones);
             model.modules.menu = new Menu(s.modules.menu, document.getElementById("template_menu"), document.getElementById("containerMenus"));
             model.modules.world = new World(s.modules.world);
@@ -338,7 +348,7 @@ let debug = (function() {
 
         let zone = model.modules.zones.zones[Zones.MAIN];
 
-        zone.on("itemsChanged", (player, items, allItems) => {
+        zone.modules.player.on("itemsChanged", (player, items, allItems) => {
             try {
                 let containerInventoryWeapon = document.getElementById("containerInventoryWeapon");
                 let containerInventoryArmor = document.getElementById("containerInventoryArmor");
@@ -457,7 +467,7 @@ let debug = (function() {
             }
         });
         
-        zone.on("playerUpdated", player => {
+        zone.modules.battle.on("playerUpdated", player => {
             try {
                 let l = player.inventory.length;
                 for(let i = 0; i < l; i++) {
@@ -474,15 +484,15 @@ let debug = (function() {
             } catch(e){console.error(e);}
         });
 
-        zone.on("rageChanged", (value, max) => {
+        zone.modules.player.on("rageChanged", (value, max) => {
             document.getElementById("progressPlayerRage").style.transform = Utility.getProgressBarTransformCSS(value, max);
         });
 
-        zone.on("frenzyChanged", (value, max) => {
+        zone.modules.player.on("frenzyChanged", (value, max) => {
             document.getElementById("progressPlayerFrenzy").style.transform = Utility.getProgressBarTransformCSS(value, max);
         });
 
-        zone.on("statsUpdated", player => {
+        zone.modules.player.on("statsUpdated", player => {
             try {
                 document.getElementById("textPlayerLevel").innerHTML = player.level;
                 document.getElementById("textPlayerXP").innerHTML = player.xp + " / " + player.getCurrentMaxXP() + " XP";
@@ -513,12 +523,12 @@ let debug = (function() {
             } catch(e){console.error(e);}
         });
 
-        zone.on("itemRerolled", (originalValue, newValue) => {
+        zone.modules.player.on("itemRerolled", (originalValue, newValue) => {
             let description = "Item successfully rerolled<br><br>Old value: " + Utility.prettify(originalValue) + "<br>New value: " + Utility.prettify(newValue);
             model.modules.menu.create(Math.floor(window.innerWidth / 2 - window.innerWidth * 0.1), Math.floor(window.innerHeight / 2 - window.innerWidth * 0.05), "20vw", "10vw", "Item Rerolled", description);
         });
 
-        zone.on("nextWaveStarted", (wave, subWave, maxSubWave, highestWave, highestWaveSubWave, maxSubWaveCurrentZone, targetWave) => {
+        zone.modules.battle.on("nextWaveStarted", (wave, subWave, maxSubWave, highestWave, highestWaveSubWave, maxSubWaveCurrentZone, targetWave) => {
             try {
                 document.getElementById("textTargetWave").innerHTML = targetWave == null ? "None" : targetWave;
 
@@ -548,7 +558,7 @@ let debug = (function() {
             } catch(e) {console.error(e);}
         });
 
-        zone.on("playerUpdated", (player, playerHealthChange) => {
+        zone.modules.battle.on("playerUpdated", (player, playerHealthChange) => {
             try {
                 if(model.flags.enableDamageNumbers) {
                     if(playerHealthChange > 0) 
@@ -563,7 +573,7 @@ let debug = (function() {
             } catch(e) {console.error(e);}
         });
 
-        zone.on("enemyDamaged", (enemy, damage, playerItemId) => {
+        zone.modules.battle.on("enemyDamaged", (enemy, damage, playerItemId) => {
             try {
                 if(model.flags.enableDamageNumbers)
                     floateys.createFloatingNumber("-" + Utility.prettify(damage * 10), (playerItemId === 1 ? enemy.screenX : enemy.screenX + 12) + "%", (enemy.screenY + 2) + "%", "c-red");
@@ -576,26 +586,26 @@ let debug = (function() {
             } catch(e) {console.error(e);}
         });
 
-        zone.on("enemyDodged", (enemy, playerItemId) => {
+        zone.modules.battle.on("enemyDodged", (enemy, playerItemId) => {
             if(model.flags.enableDamageNumbers)
                 floateys.createFloatingNumber("Dodged", (playerItemId === 1 ? enemy.screenX : enemy.screenX + 12) + "%", (enemy.screenY + 2) + "%", "c-green");
 
         });
 
-        zone.on("playerDodged", player => {
+        zone.modules.battle.on("playerDodged", player => {
             if(model.flags.enableDamageNumbers)
                 floateys.createFloatingNumber("Dodged", "75%", "85%", "c-green");
 
         });
 
-        zone.on("enemyUpdated", enemy => {
+        zone.modules.battle.on("enemyUpdated", enemy => {
             try {
                 refreshEnemyProgress(enemy);
             } catch(e) {console.error(e);}
         });
 
 
-        zone.on("enemiesRemoved", enemies => {
+        zone.modules.battle.on("enemiesRemoved", enemies => {
             try {
                 let containerBattleEnemy = document.getElementById("containerBattleEnemy");
 
@@ -621,7 +631,7 @@ let debug = (function() {
             } catch(e) {console.error(e);}
         });
 
-        zone.on("enemiesAdded", enemies => {
+        zone.modules.battle.on("enemiesAdded", enemies => {
             try {
                 let fragmentContainer = document.createDocumentFragment();
                 let l = enemies.length;
@@ -744,7 +754,7 @@ let debug = (function() {
             document.getElementById("textTimer").innerHTML = Utility.getFormattedTime(model.clock);
 
             let zone = model.modules.zones.getFocusedZone();
-            document.getElementById("textTimerRun").innerHTML = Utility.getFormattedTime(zone.battle.timestampTimeElapsedInRun);
+            document.getElementById("textTimerRun").innerHTML = Utility.getFormattedTime(zone.modules.battle.timestampTimeElapsedInRun);
 
             if(model.clock % 5000 === 0)
                 save();

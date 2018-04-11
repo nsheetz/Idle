@@ -109,27 +109,27 @@ const Item = ((window, document) => {
         }
 
         getDamageRoll(max, zoneType) {
-            return Item.getRoll(2, 10, 0.8, zoneType === Zones.QUEST ? 5 : 50, 0.2, this.rarity + 1, max);
+            return Item.getRoll(2, 10, 0.8, zoneType === Zones.QUEST ? 25 : 50, 0.2, this.rarity + 1, max);
         }
 
         getHealthRoll(max, zoneType) {
-            return Item.getRoll(20, 100, 0.8, zoneType === Zones.QUEST ? 5 : 50, 0.2, this.rarity + 1, max);
+            return Item.getRoll(20, 100, 0.8, zoneType === Zones.QUEST ? 25 : 50, 0.2, this.rarity + 1, max);
         }
 
         getRegenRoll(max, zoneType) {
-            return Item.getRoll(10, 30, 0.8, zoneType === Zones.QUEST ? 5 : 50, 0.2, this.rarity + 1, max) / 10;
+            return Item.getRoll(10, 30, 0.8, zoneType === Zones.QUEST ? 25 : 50, 0.2, this.rarity + 1, max) / 10;
         }
 
         getDamageSpeedRoll(max, zoneType) {
-            return Item.getRoll(2, 20, 0.8, zoneType === Zones.QUEST ? 5 : 50, 0.2, 1, max) / 10;
+            return Item.getRoll(2, 20, 0.8, zoneType === Zones.QUEST ? 25 : 50, 0.2, 1, max) / 10;
         }
 
         getRegenSpeedRoll(max, zoneType) {
-            return Item.getRoll(1, 30, 0.8, zoneType === Zones.QUEST ? 5 : 50, 0.2, 1, max) / 100;
+            return Item.getRoll(1, 30, 0.8, zoneType === Zones.QUEST ? 25 : 50, 0.2, 1, max) / 100;
         }
 
         getReachRoll(max, zoneType) {
-            return Item.getRoll(0, this.rarity + 1, 0.8, zoneType === Zones.QUEST ? 5 : 50, 0.2, 1, max);
+            return Item.getRoll(0, this.rarity + 1, 0.8, zoneType === Zones.QUEST ? 25 : 50, 0.2, 1, max);
         }
 
 

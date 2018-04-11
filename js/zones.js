@@ -24,8 +24,13 @@ const Zones = ((window, document) => {
             this.zones[this.focusedZoneIndex].init();
 
             if(this.zones[Zones.QUEST] != null) {
-                this.zones[Zones.QUEST]._events = this.zones[Zones.MAIN]._events;
+                for(let name in this.zones[Zones.QUEST].modules) {
+                    this.zones[Zones.QUEST].modules[name]._events = this.zones[Zones.MAIN].modules[name]._events;
+                }
             }
+
+            this.disableEvents();
+            this.enableEvents();
         }
 
         update(frameTime) {
@@ -49,7 +54,9 @@ const Zones = ((window, document) => {
                 rewardItemRarity: rewardItemRarity,
             }, this);
 
-            this.zones[Zones.QUEST]._events = this.zones[Zones.MAIN]._events;
+            for(let name in this.zones[Zones.QUEST].modules) {
+                this.zones[Zones.QUEST].modules[name]._events = this.zones[Zones.MAIN].modules[name]._events;
+            }
         }
 
         changeFocusedZone(index) {
@@ -58,17 +65,30 @@ const Zones = ((window, document) => {
                 return false;
             }
 
-            let disabled = this._eventsDisabled;
-            if(!disabled)
+            let catchingUp = true;
+
+            loop:
+            for(let i = 0; i < this.zones.length; i++) {
+                for(let name in this.zones[i].modules) {
+                    let module = this.zones[i].modules[name];
+
+                    if(!module._eventsDisabled) {
+                        catchingUp = false;
+                        break loop;
+                    }
+                }
+            }
+
+            if(!catchingUp)
                 this.disableEvents();
 
             this.focusedZoneIndex = index;
 
-            if(!disabled)
+            if(!catchingUp)
                 this.enableEvents();
 
+            
             this.emit("focusedZoneChanged", this.zones[this.focusedZoneIndex]);
-
             return true;
         }
 
@@ -91,7 +111,8 @@ const Zones = ((window, document) => {
             }
 
             this.zones[Zones.MAIN].player.addItem(new Item().generateRandom(Zones.MAIN, null, zone.rewardItemRarity));
-
+            this.zones[Zones.MAIN].player.addItem(new Item().generateRandom(Zones.MAIN, null, zone.rewardItemRarity));
+            
             return this.changeFocusedZone(0);
         }
 
@@ -102,14 +123,19 @@ const Zones = ((window, document) => {
             for(let i = 0; i < l; i++) {
                 let zone = this.zones[i];
 
-                zone.disableEvents();
+                for(let name in zone.modules) {
+                    zone.modules[name].disableEvents();
+                }
             }
         }
 
         enableEvents() {
             EventEmitter.prototype.enableEvents.apply(this);
 
-            this.getFocusedZone().enableEvents();
+            let zone = this.getFocusedZone();
+            for(let name in zone.modules) {
+                zone.modules[name].enableEvents();
+            }
         }
     }
 
