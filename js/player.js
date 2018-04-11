@@ -178,7 +178,7 @@ const Player = ((window, document) => {
             if(this.replaceItem(item, newItem)) {
                 this.gold -= cost;
                 this.updateStats();
-                this.emit("itemRerolled", originalValue, value);
+                this.emit("itemRerolled", originalValue, value, [item, newItem]);
                 this.sortInventory();
                 return true;
             }
