@@ -202,8 +202,8 @@ let debug = (function() {
 
     try {
         let zone = model.modules.zones.getFocusedZone();
-        document.getElementById("textPlayerHealth").innerHTML = zone.modules.player.health;
-        document.getElementById("textPlayerMaxHealth").innerHTML = zone.modules.player.maxHealth;
+        document.getElementById("textPlayerHealth").innerHTML = Utility.prettify(zone.modules.player.health);
+        document.getElementById("textPlayerMaxHealth").innerHTML = Utility.prettify(zone.modules.player.maxHealth);
     } catch(e) {
         console.error(e);
     }
@@ -249,7 +249,7 @@ let debug = (function() {
                     elem.innerHTML = Math.ceil(1 / (Battle.getEnemyInterval(enemy.damageSpeed, enemy.stats.agi, zone.modules.player.stats.agi.total) / 1000) * 10) / 10;
                     break;
                 case "textHealth":
-                    elem.innerHTML = Utility.prettify(enemy.health) + "/" + Math.ceil(enemy.maxHealth);
+                    elem.innerHTML = Utility.prettify(enemy.health) + "/" + Utility.prettify(enemy.maxHealth);
                     break;
                 case "textStatCap":
                     elem.innerHTML = Utility.prettify(Battle.getEnemyStatCeiling(zone.modules.battle.wave, Object.keys(enemy.stats).length));
@@ -348,7 +348,7 @@ let debug = (function() {
 
         let zone = model.modules.zones.zones[Zones.MAIN];
 
-        zone.modules.player.on("itemsChanged", (player, items, allItems) => {
+        zone.modules.player.on("itemsChanged", function (player, items, allItems) {
             try {
                 let containerInventoryWeapon = document.getElementById("containerInventoryWeapon");
                 let containerInventoryArmor = document.getElementById("containerInventoryArmor");
@@ -442,7 +442,7 @@ let debug = (function() {
                     }
 
                     refreshItemProgress(item);
-                    refreshEnemyStats(null, null, zone);
+                    refreshEnemyStats(null, null, this[this.sZone]);
 
                     elem.className += " item-rarity-" + item.rarity + " item-" + item.type;
 
@@ -580,7 +580,7 @@ let debug = (function() {
 
                 let elem = document.getElementById("enemy" + enemy.id);
                 if(elem != null) {
-                    elem.querySelector(".progress-bar-text").innerHTML = Utility.prettify(Math.max(0, enemy.health)) + "/" + enemy.maxHealth;
+                    elem.querySelector(".progress-bar-text").innerHTML = Utility.prettify(Math.max(0, enemy.health)) + "/" + Utility.prettify(enemy.maxHealth);
                     elem.querySelector(".progress-bar").style.transform = Utility.getProgressBarTransformCSS(enemy.health, enemy.maxHealth);
                 }
             } catch(e) {console.error(e);}
@@ -631,7 +631,7 @@ let debug = (function() {
             } catch(e) {console.error(e);}
         });
 
-        zone.modules.battle.on("enemiesAdded", enemies => {
+        zone.modules.battle.on("enemiesAdded", function(enemies) {
             try {
                 let fragmentContainer = document.createDocumentFragment();
                 let l = enemies.length;
@@ -654,7 +654,7 @@ let debug = (function() {
                     }
                                     
                     
-                    refreshEnemyStats(fragment.children[0], enemy, zone);
+                    refreshEnemyStats(fragment.children[0], enemy, this[this.sZone]);
 
                     let elem = Array.prototype.slice.call(fragment.childNodes, 0)[1];
                     elem.id = "enemy" + enemy.id;
