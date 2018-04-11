@@ -57,13 +57,7 @@ const Utility = Object.freeze({
             number /= 1000;
             ++unit;
         }
-
-        let suffixes =
-            ('KMBTQaQiSxSpOcNoDcUdDdTdQadQidSxdSpdOdNdVUvDvTvQavQivSxvSpvOvNvTgUtgDtgTtgQatg' +
-            'QitgSxtgSptgOtgNtgQaaUqaDqaTqaQaqaQiqaSxqaSpqaOqaNqaQiaUqiDqiTqiQaqiQiqiSxqiSpqi' +
-            'OqiNqiSxaUsxDsxTsxQasxQisxSxsxSpsxOsxNsxSpaUspDspTspQaspQispSxspSpspOspNspOgUog' +
-            'DogTogQaogQiogSxogSpogOogNogNaUnDnTnQanQinSxnSpnOnNnCtUc').split(/(?=[A-Z])/);
-        return +number.toPrecision(3) + suffixes[unit - 1];
+        return +number.toPrecision(3) + Utility.suffixes[unit - 1];
     },
     getProgressBarTransformCSS : function(number, maxNumber) {
         return "translateX(-" + (100 - Math.ceil(number / maxNumber * 100)) + "%)";
@@ -80,5 +74,9 @@ const Utility = Object.freeze({
 			newArray[i] = array[i] * multiplier;
 		
 		return newArray;
-	}
+    },
+    suffixes : ('KMBTQaQiSxSpOcNoDcUdDdTdQadQidSxdSpdOdNdVUvDvTvQavQivSxvSpvOvNvTgUtgDtgTtgQatg' +
+            'QitgSxtgSptgOtgNtgQaaUqaDqaTqaQaqaQiqaSxqaSpqaOqaNqaQiaUqiDqiTqiQaqiQiqiSxqiSpqi' +
+            'OqiNqiSxaUsxDsxTsxQasxQisxSxsxSpsxOsxNsxSpaUspDspTspQaspQispSxspSpspOspNspOgUog' +
+            'DogTogQaogQiogSxogSpogOogNogNaUnDnTnQanQinSxnSpnOnNnCtUc').split(/(?=[A-Z])/)
 });

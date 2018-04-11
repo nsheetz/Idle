@@ -1,3 +1,9 @@
+2018-04-10 - V0.6.0
+* Separated the Main Zone into the possibility of running multiple simultaneous Zones.
+* Added the base of the Quest system, available from the Village's Town Hall. Each time a Quest is finished, you will get a high rarity item ( floor(zone/10)+4 ). A Quest Zone and the Main Zone will progress simultaneously, if both are active.
+* Added a new bar above the enemy area, which shows the status of the current Zone, and has arrows to switch between them.
+* Added number formatting, added formatting to hopefully all numbers.
+
 2018-04-10 - V0.5.5
 * Fix issue with floating numbers staying on screen after importing.
 * Exposed item DOM element cache to debug.

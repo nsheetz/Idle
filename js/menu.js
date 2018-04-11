@@ -4,7 +4,7 @@ const Menu = ((window, document) => {
     return class Menu extends EventEmitter {
         constructor(init, template, container) {
             super();
-            
+
             init = init || {};
 
             this.sMenus = Symbol();
@@ -21,7 +21,7 @@ const Menu = ((window, document) => {
             this.update();
         }
 
-        createVillage(date, imageVillage, imageVillageLightmap, windowWidth, windowHeight) {
+        createVillage(date, imageVillage, imageVillageLightmap, windowWidth, windowHeight, questCb) {
             let scaleX = Math.floor(windowWidth * 0.9 / 300);
             let scaleY = Math.floor(windowHeight * 0.9 / 188);
             let scale = Math.min(scaleX, scaleY);
@@ -93,7 +93,37 @@ const Menu = ((window, document) => {
                 }),
             });
 
-            return this.setup(menus.length - 1);
+            let elem = this.setup(menus.length - 1);
+
+            elem.querySelector("[data-id=townHall]").onclick = () => {
+                let description = "Greetings, you there!<br><br> I'm the Mayor.";
+
+                description += "I'm going to cut straight to the chase. See, this whole place is still kinda WIP and stuff, so I'm going to spare you any story and whatnot for now.<br><br>";
+                description += "What you need to know is that here is where you go on Quests!<br><br>";
+                description += "Once you go on a Quest, you can switch between the Quest area and the Main area with arrows above the battle screen. You will fight in both, simultaneously! Because of training...<br><br>";
+                description += "<button data-id=startQuest>Go on Quest</button>";
+
+                let menu = {
+                    title: "Town Hall",
+                    description: description,
+                    translateX: Math.floor(windowWidth / 2 - windowWidth * 0.15),
+                    translateY: Math.floor(windowHeight / 2 - windowWidth * 0.1),
+                    width: "30vw",
+                    height: "20vw",
+                    clock: 1000*60,
+                    update: () => {},
+                };
+
+                menus.push(menu);
+
+                let elem = this.setup(menus.length - 1);
+
+                elem.querySelector("[data-id=startQuest]").onclick = () => {
+                    this.remove(menu);
+
+                    questCb();
+                }
+            }
         }
 
         createChangeValueWeights(player, windowWidth, windowHeight) {
@@ -155,7 +185,7 @@ const Menu = ((window, document) => {
                     slider.value = maxRolls;
                 
                 roll.innerHTML = slider.value;
-                button.innerHTML = Item.getRerollCost(item.rarity, slider.value);
+                button.innerHTML = Utility.prettify(Item.getRerollCost(item.rarity, slider.value));
 
                 if(Number(slider.value) === 0)
                     button.disabled = true;
@@ -191,14 +221,14 @@ const Menu = ((window, document) => {
                 description += '<div class="icon-' + name + '" style="width:20%;height:100%;float:left"></div>';
                 description += '<div class="progress-bar-outer" style="height:100%;width:60%;float:left;font-size:0.8vw;">';
                 description +=      '<div class="progress-bar bg-' + name + '" style="width:' + (stat / statMax * 100) + '%"></div>';
-                description +=      '<div class="progress-bar-text">' + stat + "/" + statMax + '</div>';
+                description +=      '<div class="progress-bar-text">' + Utility.prettify(stat) + "/" + Utility.prettify(statMax) + '</div>';
                 description += '</div>';
-                description += '<div style="width:20%;height:100%;float:left">' + value + '</div>';
+                description += '<div style="width:20%;height:100%;float:left">' + Utility.prettify(value) + '</div>';
                 description +=  '</div>';
             }
             
             let description = '';
-            description +=  '<div style="width:100%;margin-top:1vw">Value: ' + (Math.floor(item.getValue(player.weights) * 100) / 100) + '</div>';
+            description +=  '<div style="width:100%;margin-top:1vw">Value: ' + Utility.prettify(item.getValue(player.weights)) + '</div>';
             description +=  '<div style="position:relative; width:calc(100% - 2vw);height:100%;margin: 1vw;margin-top:0">';
             
             description += "<hr>";
@@ -248,7 +278,7 @@ const Menu = ((window, document) => {
 
             description += '<button data-item-backpack=true class=bg-gray style="width:100%">' + (item._inventory.id === Player.BACKPACK ? "Remove from backpack" : "Move to backpack") + '</button>';
             description += '<button data-item-reroll=true class=bg-gray style="width:100%">Reroll</button>';
-            description += '<button data-item-sell=true class=bg-yellow style="width:100%">Sell (<span class="icon-gold"></span>' + item.getSaleGoldValue() + ')</button>';
+            description += '<button data-item-sell=true class=bg-yellow style="width:100%">Sell (<span class="icon-gold"></span>' + Utility.prettify(item.getSaleGoldValue()) + ')</button>';
 
             description +=  '</div>';
             menu = {

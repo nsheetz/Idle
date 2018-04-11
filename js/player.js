@@ -35,7 +35,7 @@ const Player = ((window, document) => {
             }
         }
         
-        constructor(init) {
+        constructor(init, zone) {
             super();
     
             init = init || {};
@@ -82,10 +82,13 @@ const Player = ((window, document) => {
             }
 
             this.lastGoldEarned = init.lastGoldEarned || 0;
+
+            this.sZone = Symbol();
+            this[this.sZone] = zone;
         }
     
         init() {
-            this.emit("itemsChanged", this.inventory, true);
+            this.emit("itemsChanged", this, this.inventory, true);
 
             this.updateStats();
         }
@@ -127,7 +130,7 @@ const Player = ((window, document) => {
             item._inventory.data = null;
     
             this.inventory.push(item);
-            this.emit("itemsChanged", [item], false);
+            this.emit("itemsChanged", this, [item], false);
     
             if(this.inventory.length > 36 + 5 + 6)
                 this.destroyWeakItems();
@@ -141,12 +144,16 @@ const Player = ((window, document) => {
 
             item._inventory.id = id;
             item._inventory.data = data;
-            this.emit("itemsChanged", item, false);
+            this.emit("itemsChanged", this, item, false);
 
             return true;
         }
 
         rerollItem(item, rolls) {
+            let zone = this[this.sZone];
+            let zones = zone[zone.sZones];
+            let zoneType = zones.getZoneType(zone);
+
             let cost = Item.getRerollCost(item.rarity, rolls);
 
             if(this.gold < cost) {
@@ -160,7 +167,7 @@ const Player = ((window, document) => {
             let newItem = null;
 
             for(let i = 0; i < rolls; i++) {
-                item.generateRandom(null, item.rarity, item.type);
+                item.generateRandom(zoneType, null, item.rarity, item.type);
                 let newValue = item.getValue(this.weights);
                 if(newValue >= value) {
                     value = newValue;
@@ -193,7 +200,7 @@ const Player = ((window, document) => {
             this.inventory[index] = newItem;
 
             this.updateStats();
-            this.emit("itemsChanged", [item, newItem], false);
+            this.emit("itemsChanged", this, [item, newItem], false);
 
             return true;
         }
@@ -226,7 +233,7 @@ const Player = ((window, document) => {
             }
     
             this.updateStats();
-            this.emit("itemsChanged", item, false);
+            this.emit("itemsChanged", this, item, false);
 
             return true;
         }
@@ -266,7 +273,7 @@ const Player = ((window, document) => {
             item._inventory.data = slot;
     
             this.updateStats();
-            this.emit("itemsChanged", items, false);
+            this.emit("itemsChanged", this, items, false);
             return true;
         }
     
@@ -282,7 +289,7 @@ const Player = ((window, document) => {
             item._battleClockRegenSpeed = 0;
     
             this.updateStats();
-            this.emit("itemsChanged", item, false);
+            this.emit("itemsChanged", this, item, false);
             return true;
         }
     
@@ -410,7 +417,7 @@ const Player = ((window, document) => {
                 );
             });
     
-            this.emit("itemsChanged", this.inventory, true);
+            this.emit("itemsChanged", this, this.inventory, true);
         }
 
         sellItem(item) {
@@ -421,7 +428,7 @@ const Player = ((window, document) => {
             this.gold += item.getSaleGoldValue();
 
             item._deleted = true;
-            this.emit("itemsChanged", [item], false);
+            this.emit("itemsChanged", this, [item], false);
             this.inventory.splice(index, 1);
 
             this.updateStats();

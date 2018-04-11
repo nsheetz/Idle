@@ -5,7 +5,7 @@ canvas {
     image-rendering: -o-crisp-edges;
     image-rendering: pixelated;
     -ms-interpolation-mode: nearest-neighbor;
-  }
+}
 
 :root {
     --scrollbar-width: 14px;
@@ -22,6 +22,27 @@ canvas {
     --ui-color-border:rgb(165, 104, 0);
 
     --ui-color-progress-outer:rgb(35, 22, 0);
+}
+
+.arrow {
+    position: absolute;
+    width: 1vw;
+    height: 1vw;
+    border-style: solid;
+    border-width: 0.3vw;
+    border-right: none;
+    border-bottom: none;
+    bottom: calc(50% - 0.5vw);
+}
+
+.arrow-left {
+    transform: rotate(-45deg);
+    left: calc(50% - 0.5vw);
+}
+
+.arrow-right {
+    transform: rotate(135deg);
+    right: calc(50% - 0.5vw);
 }
 
 #containerFooter {
@@ -105,6 +126,15 @@ canvas {
     align-content: flex-start; 
 
     flex:0 0 calc(var(--item-width) * 2 + var(--item-margin));
+}
+
+#containerWorldHeader {
+    position:relative;
+    display:flex;
+    flex-flow:row nowrap;
+    flex: 0 0 2vw;
+
+    background-color: var(--ui-color-bg-panel);
 }
 
 #containerWorld {
@@ -256,6 +286,7 @@ p {
 }
 
 button {
+    position: relative;
     font-size:inherit;
     cursor:pointer;
 }

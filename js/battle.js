@@ -2,7 +2,7 @@ const Battle = ((window, document) => {
     "use strict";
 
     return class Battle extends EventEmitter {
-        constructor(init) {
+        constructor(init, zone) {
             super();
     
             init = init || {};
@@ -19,12 +19,15 @@ const Battle = ((window, document) => {
             for(let i = 0; i < this.enemies.length; i++) {
                 this.enemies[i] = new Enemy(this.enemies[i]);
             }
+
+            this.sZone = Symbol();
+            this[this.sZone] = zone;
         }
     
         init() {
             this.emit("enemiesRemoved");
             this.emit("enemiesAdded", this.enemies);
-            this.emit("nextWaveStarted", this.wave, this.subWave, this.maxSubWave, this.highestWave, this.highestWaveSubWave, this.maxSubWaveCurrentZone);
+            this.emit("nextWaveStarted", this.wave, this.subWave, this.maxSubWave, this.highestWave, this.highestWaveSubWave, this.maxSubWaveCurrentZone, this[this.sZone].targetWave);
         }
 
         
@@ -42,6 +45,9 @@ const Battle = ((window, document) => {
         }
     
         nextWave() {
+            if(this[this.sZone].ended)
+                return false;
+                
             if(this.subWave < this.maxSubWaveCurrentZone)
                 this.subWave++;
             else {
@@ -51,12 +57,21 @@ const Battle = ((window, document) => {
                 this.maxSubWaveCurrentZone = Battle.getMaxSubWave(this.wave, this.maxSubWave, this.highestWave);
             }
     
-            let randomOffset = Math.ceil(this.wave / 10);
-
-            let random = Utility.getRandomInt(randomOffset, 4 + randomOffset);
-    
             this.emit("enemiesRemoved");
             this.enemies.splice(0, this.enemies.length);
+
+            this.emit("nextWaveStarted", this.wave, this.subWave, this.maxSubWave, this.highestWave, this.highestWaveSubWave, this.maxSubWaveCurrentZone, this[this.sZone].targetWave);
+
+            let zone = this[this.sZone];
+            if(zone.targetWave != null && this.wave >= zone.targetWave) {
+                zone.end();
+
+                return false;
+            }
+
+            let randomOffset = Math.ceil(this.wave / 10);
+            let random = Utility.getRandomInt(randomOffset, 4 + randomOffset);
+
             for(let i = 0; i < random; i++) {
                 let hp = Math.floor(Math.triangular((this.wave) / 10) * 100);
                 let damage = (Math.triangular((this.wave) / 10) * 10);
@@ -109,10 +124,15 @@ const Battle = ((window, document) => {
                 this.highestWaveSubWave = this.subWave;
     
             this.emit("enemiesAdded", this.enemies);
-            this.emit("nextWaveStarted", this.wave, this.subWave, this.maxSubWave, this.highestWave, this.highestWaveSubWave, this.maxSubWaveCurrentZone);
+
+            return true;
         }
     
-        update(fixedDelta, clock, player) {
+        update(fixedDelta, player) {
+            let zone = this[this.sZone];
+            let zones = zone[zone.sZones];
+            let zoneType = zones.getZoneType(zone);
+
             this.timestampTimeElapsedInRun += fixedDelta;
 
             let playerHealthBeforeUpdate = player.health;
@@ -163,7 +183,7 @@ const Battle = ((window, document) => {
                                     this.emit("enemiesRemoved", [enemy]);
 
                                     player.xp += Math.ceil(this.wave / 10);
-                                    player.addItem(new Item().generateRandom(this.wave));
+                                    player.addItem(new Item().generateRandom(zoneType, this.wave));
 
                                     player.updateStats();
                     
@@ -212,7 +232,7 @@ const Battle = ((window, document) => {
                         player.removeRage(2);
 
                         if(player.health <= 0) {
-                            console.game(console.INFO, "Defeated! Wave: " + this.wave + "." + this.subWave + ". Time: " + Utility.getFormattedTime(this.timestampTimeElapsedInRun));
+                            console.game(console.INFO, "⚔! [" + (zoneType === 0 ? "Main" : zoneType === 1 ? "Quest" : "Limbo") + "] [" + this.wave + "." + this.subWave + "] [" + Utility.getFormattedTime(this.timestampTimeElapsedInRun) + "]");
                             this.startNewRun(player);
                             return;
                         }

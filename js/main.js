@@ -3,8 +3,7 @@
 let debug = (function() {
     let model = {
         modules: {
-            player: null,
-            battle: null,
+            zones: null,
             menu: null,
             world: null
         },
@@ -16,7 +15,7 @@ let debug = (function() {
             enableDamageNumbers: true,
         },
         version: 12,
-        subVersion: 2,
+        subVersion: 3,
     }
 
     let assets = {
@@ -37,9 +36,10 @@ let debug = (function() {
     onLowPerformanceChecked(model.flags.lowPerformanceMode, true);
     onEnableDamageNumbersChecked(model.flags.enableDamageNumbers, true);
 
-    if(model.modules.player.inventory.length === 0) {
-        model.modules.player.addItem(new Item().generateRandom(null, 0, Item.WEAPON));
-        model.modules.player.addItem(new Item().generateRandom(null, 0, Item.ARMOR));
+    //todo
+    if(model.modules.zones.zones[Zones.MAIN].player.inventory.length === 0) {
+        model.modules.zones.zones[Zones.MAIN].player.addItem(new Item().generateRandom(Zones.MAIN, null, 0, Item.WEAPON));
+        model.modules.zones.zones[Zones.MAIN].player.addItem(new Item().generateRandom(Zones.MAIN, null, 0, Item.ARMOR));
     }
 
     try {
@@ -75,7 +75,10 @@ let debug = (function() {
             model.modules.menu.create(Math.floor(window.innerWidth / 2 - window.innerWidth * 0.25), Math.floor(window.innerHeight / 2 - window.innerWidth * 0.11) - 100, 
             "50vw", "22vw", "Help", description);
         }
-        document.getElementById("buttonBattle").onclick = e => model.modules.battle.startNewRun(model.modules.player);
+        document.getElementById("buttonBattle").onclick = e => {
+            let zone = model.modules.zones.getFocusedZone();
+            zone.battle.startNewRun(zone.player);
+        }
         document.getElementById("buttonPause").onclick = function(e) {
             paused = !paused;
 
@@ -89,13 +92,38 @@ let debug = (function() {
             }
         }
 
+        document.getElementById("buttonZoneTypeSwitchLeft").onclick = function(e) {
+            let zones = model.modules.zones;
+
+            let type = zones.getZoneType(zones.getFocusedZone());
+            zones.changeFocusedZone(--type);
+        }
+
+        document.getElementById("buttonZoneTypeSwitchRight").onclick = function(e) {
+            let zones = model.modules.zones;
+
+            let type = zones.getZoneType(zones.getFocusedZone());
+            zones.changeFocusedZone(++type);
+        }
+
         document.getElementById("buttonToVillage").onclick = function(e) {
             let date = new Date();
-            model.modules.menu.createVillage(date, assets.imageVillage, assets.imageVillageLightmap, window.innerWidth, window.innerHeight);
+            model.modules.menu.createVillage(date, assets.imageVillage, assets.imageVillageLightmap, window.innerWidth, window.innerHeight, () => {
+                let highestWave = model.modules.zones.zones[Zones.MAIN].battle.highestWave;
+                highestWave = Math.floor(highestWave / 10);
+                if(highestWave === 0)
+                    return;
+                
+                model.modules.zones.createNewQuest(highestWave * 10, highestWave + 4);
+                model.modules.zones.zones[Zones.QUEST].player.addItem(new Item().generateRandom(Zones.QUEST, null, 0, Item.WEAPON));
+                model.modules.zones.zones[Zones.QUEST].player.addItem(new Item().generateRandom(Zones.QUEST, null, 0, Item.ARMOR));
+                model.modules.zones.changeFocusedZone(Zones.QUEST);
+            });
         }
 
         document.getElementById("buttonChangeValueWeights").onclick = function(e) {
-            model.modules.menu.createChangeValueWeights(model.modules.player, window.innerWidth, window.innerHeight);
+            let zone = model.modules.zones.getFocusedZone();
+            model.modules.menu.createChangeValueWeights(zone.player, window.innerWidth, window.innerHeight);
         }
 
         document.getElementById("buttonExportSave").onclick = function(e) {
@@ -124,8 +152,14 @@ let debug = (function() {
             textareaSave.focus();
         };
 
-        document.getElementById("buttonInventorySort").onclick = e => model.modules.player.sortInventory();
-        document.getElementById("buttonInventoryDestroyWeakItems").onclick = e => model.modules.player.destroyWeakItems();
+        document.getElementById("buttonInventorySort").onclick = e => {
+            let zone = model.modules.zones.getFocusedZone();
+            zone.player.sortInventory();
+        };
+        document.getElementById("buttonInventoryDestroyWeakItems").onclick = e => {
+            let zone = model.modules.zones.getFocusedZone();
+            zone.player.destroyWeakItems();
+        };
 
         document.getElementById("checkboxLowPerformance").onchange = function(e) {
             model.flags.lowPerformanceMode = this.checked;
@@ -138,7 +172,9 @@ let debug = (function() {
         }
 
         document.getElementById("containerProgressRarityChance").onclick = e => {
-            let wave = model.modules.battle.wave;
+            let zone = model.modules.zones.getFocusedZone();
+
+            let wave = zone.battle.wave;
             let startingRarity = Item.getRarityRollStartingRarity(wave);
             let offset = Item.getRarityRollOffset(wave);
 
@@ -165,8 +201,9 @@ let debug = (function() {
     }
 
     try {
-        document.getElementById("textPlayerHealth").innerHTML = model.modules.player.health;
-        document.getElementById("textPlayerMaxHealth").innerHTML = model.modules.player.maxHealth;
+        let zone = model.modules.zones.getFocusedZone();
+        document.getElementById("textPlayerHealth").innerHTML = zone.player.health;
+        document.getElementById("textPlayerMaxHealth").innerHTML = zone.player.maxHealth;
     } catch(e) {
         console.error(e);
     }
@@ -175,6 +212,76 @@ let debug = (function() {
         localStorage.setItem("_save0_", JSON.stringify(model));
         console.game(console.SAVED, "Game Saved!");
     }
+
+    function refreshEnemyStats(elem, enemy, zone) {
+        let arr = elem != null ? [{elem:elem,enemy:enemy}] : ((() => {
+            let arr = [];
+            let enemies = zone.battle.enemies;
+            let l = enemies.length;
+            for(let i = 0; i < l; i++) {
+                let enemy = enemies[i];
+                arr[i] = {elem:document.getElementById("enemy" + enemy.id), enemy:enemy};
+            }
+            return arr;
+        })());
+
+        let l = arr.length;
+        for(let i = 0; i < l; i++) {
+            let obj = arr[i];
+            elem = obj.elem;
+            enemy = obj.enemy;
+
+            if(elem === null)
+                continue;
+
+            let elems = Array.from(elem.querySelectorAll("[data-id]"));
+            for(let elem in elems) {
+                elem = elems[elem];
+
+                switch(elem.dataset["id"]) {
+                case "textDamage":
+                    elem.innerHTML = Utility.prettify(Battle.getDamage(enemy.damage, enemy.stats.str, zone.player.stats.def.total));
+                    break;
+                case "textDamageBase":
+                    elem.innerHTML = "(" + Utility.prettify(enemy.damage) + ")";
+                    break;
+                case "textSpeed":
+                    elem.innerHTML = Math.ceil(1 / (Battle.getEnemyInterval(enemy.damageSpeed, enemy.stats.agi, zone.player.stats.agi.total) / 1000) * 10) / 10;
+                    break;
+                case "textHealth":
+                    elem.innerHTML = Utility.prettify(enemy.health) + "/" + Math.ceil(enemy.maxHealth);
+                    break;
+                case "textStatCap":
+                    elem.innerHTML = Utility.prettify(Battle.getEnemyStatCeiling(zone.battle.wave, Object.keys(enemy.stats).length));
+                }
+
+                for(let name in enemy.stats) {
+                    if(elem.dataset["id"] === "progress" + name) {
+                        elem.style.transform = Utility.getProgressBarTransformCSS(enemy.stats[name], Battle.getEnemyStatCeiling(zone.battle.wave, Object.keys(enemy.stats).length));
+                    }
+                }
+            }
+        }
+    }
+
+    function refreshEnemyProgress(enemy) {
+        let node = document.getElementById("enemy" + enemy.id);
+        if(node != null) {
+            node = node.querySelector(".enemy-attack-progress");
+            node.style.transform = Utility.getProgressBarTransformCSS(enemy._battleCoordinatorClockSelf, enemy._battleCoordinatorClockSelfFinish);
+        }
+        
+    }
+
+    function refreshItemProgress(item) {
+        let elem = itemCache.get(item);
+        let node = elem.querySelector(".item-attack-progress");
+        node.style.transform = Utility.getProgressBarTransformCSS(item._battleClockSpeed, item._battleClockSpeedFinish);
+    
+        node = elem.querySelector(".item-regen-progress");
+        node.style.transform = Utility.getProgressBarTransformCSS(item._battleClockRegenSpeed, item._battleClockRegenSpeedFinish);
+    }
+
 
     function load() {
         let s = localStorage.getItem("_save0_");
@@ -199,415 +306,370 @@ let debug = (function() {
                 s.flags.enableDamageNumbers = true;
             }
 
-            model.modules.player = new Player(s.modules.player);
-            model.modules.battle = new Battle(s.modules.battle);
+            if(s.subVersion <= 2) {
+                s.modules.zones = {
+                    zones : [{
+                        player: s.modules.player,
+                        battle: s.modules.battle,
+                    }],
+                }
+            }
+
+            model.modules.zones = new Zones(s.modules.zones);
             model.modules.menu = new Menu(s.modules.menu, document.getElementById("template_menu"), document.getElementById("containerMenus"));
             model.modules.world = new World(s.modules.world);
         }
         else {
-            model.modules.player = new Player(null);
-            model.modules.battle = new Battle(null);
+            model.modules.zones = new Zones(null);
             model.modules.menu = new Menu(null, document.getElementById("template_menu"), document.getElementById("containerMenus"));
             model.modules.world = new World(null);
         }
-        (() => {
-            function refreshEnemyStats(elem, enemy) {
-                let arr = elem != null ? [{elem:elem,enemy:enemy}] : ((() => {
-                    let arr = [];
-                    let enemies = model.modules.battle.enemies;
-                    let l = enemies.length;
+
+        itemCache = new Map();
+
+        model.modules.zones.on("focusedZoneChanged", zone => {
+            zone.init();
+            model.modules.world.init();
+            
+            let type = model.modules.zones.getZoneType(zone);
+            document.getElementById("textZoneType").innerHTML = type === Zones.MAIN ? "Main Zone" : type === Zones.QUEST ? "Quest Zone" : "Limbo";
+            document.getElementById("textZoneType").innerHTML += zone.ended ? " (Finished)" : "";
+        });
+
+        let zone = model.modules.zones.zones[Zones.MAIN];
+
+        zone.on("itemsChanged", (player, items, allItems) => {
+            try {
+                let containerInventoryWeapon = document.getElementById("containerInventoryWeapon");
+                let containerInventoryArmor = document.getElementById("containerInventoryArmor");
+
+                if(!(items instanceof Array))
+                    items = [items];
+
+                if(allItems) {
+                    let a = Array.from(document.getElementsByClassName("item"));
+                    let l = a.length;
                     for(let i = 0; i < l; i++) {
-                        let enemy = enemies[i];
-                        arr[i] = {elem:document.getElementById("enemy" + enemy.id), enemy:enemy};
+                        a[i].parentNode.removeChild(a[i]);
                     }
-                    return arr;
-                })());
+                    itemCache = new Map();
+                }
 
-                let l = arr.length;
+                let l = items.length;
                 for(let i = 0; i < l; i++) {
-                    let obj = arr[i];
-                    elem = obj.elem;
-                    enemy = obj.enemy;
+                    let item = items[i];
 
-                    if(elem === null)
+                    let existingElem = itemCache.get(item);
+                    if(item._deleted === true && existingElem != null) {
+                        itemCache.delete(item);
+                        itemCache = new Map(itemCache);
+
+                        existingElem.onclick = null;
+                        existingElem.parentNode.removeChild(existingElem);
                         continue;
-
-                    let elems = Array.from(elem.querySelectorAll("[data-id]"));
-                    for(let elem in elems) {
-                        elem = elems[elem];
-
-                        switch(elem.dataset["id"]) {
-                        case "textDamage":
-                            elem.innerHTML = Math.ceil(Battle.getDamage(enemy.damage, enemy.stats.str, model.modules.player.stats.def.total));
-                            break;
-                        case "textDamageBase":
-                            elem.innerHTML = "(" + Math.ceil(enemy.damage) + ")";
-                            break;
-                        case "textSpeed":
-                            elem.innerHTML = Math.ceil(1 / (Battle.getEnemyInterval(enemy.damageSpeed, enemy.stats.agi, model.modules.player.stats.agi.total) / 1000) * 10) / 10;
-                            break;
-                        case "textHealth":
-                            elem.innerHTML = Math.ceil(enemy.health) + "/" + Math.ceil(enemy.maxHealth);
-                            break;
-                        case "textStatCap":
-                            elem.innerHTML = Math.ceil(Battle.getEnemyStatCeiling(model.modules.battle.wave, Object.keys(enemy.stats).length));
-                        }
-
-                        for(let name in enemy.stats) {
-                            if(elem.dataset["id"] === "progress" + name) {
-                                elem.style.transform = Utility.getProgressBarTransformCSS(enemy.stats[name], Battle.getEnemyStatCeiling(model.modules.battle.wave, Object.keys(enemy.stats).length));
-                            }
-                        }
                     }
-                }
-            }
-
-            function refreshEnemyProgress(enemy) {
-                let node = document.getElementById("enemy" + enemy.id);
-                if(node != null) {
-                    node = node.querySelector(".enemy-attack-progress");
-                    node.style.transform = Utility.getProgressBarTransformCSS(enemy._battleCoordinatorClockSelf, enemy._battleCoordinatorClockSelfFinish);
-                }
-                
-            }
-
-            (() => {
-                function refreshItemProgress(item) {
-                    let elem = itemCache.get(item);
-                    let node = elem.querySelector(".item-attack-progress");
-                    node.style.transform = Utility.getProgressBarTransformCSS(item._battleClockSpeed, item._battleClockSpeedFinish);
-                
-                    node = elem.querySelector(".item-regen-progress");
-                    node.style.transform = Utility.getProgressBarTransformCSS(item._battleClockRegenSpeed, item._battleClockRegenSpeedFinish);
-                }
-
-                itemCache = new Map();
-
-                model.modules.player.on("itemsChanged", (items, allItems) => {
-                    try {
-                        let containerInventoryWeapon = document.getElementById("containerInventoryWeapon");
-                        let containerInventoryArmor = document.getElementById("containerInventoryArmor");
-
-                        if(!(items instanceof Array))
-                            items = [items];
-
-                        if(allItems) {
-                            let a = Array.from(document.getElementsByClassName("item"));
-                            let l = a.length;
-                            for(let i = 0; i < l; i++) {
-                                a[i].parentNode.removeChild(a[i]);
-                            }
-                            itemCache = new Map();
-                        }
-
-                        let l = items.length;
-                        for(let i = 0; i < l; i++) {
-                            let item = items[i];
-
-                            let existingElem = itemCache.get(item);
-                            if(item._deleted === true && existingElem != null) {
-                                itemCache.delete(item);
-                                itemCache = new Map(itemCache);
-
-                                existingElem.onclick = null;
-                                existingElem.parentNode.removeChild(existingElem);
-                                continue;
-                            }
-                            else if(item._deleted) {
-                                continue;
-                            }
-                            let fragment;
-                            let nextChild = 0;
-
-                            if(item.type === Item.WEAPON) {
-                                fragment = document.getElementById("template_item_weapon").content.cloneNode(true);
-                                fragment.children[0].children[0].children[0].innerHTML = Math.round(item.getValue(model.modules.player.weights));
-                                fragment.children[0].children[1].children[0].innerHTML = Math.floor(item.damageSpeed * 10) / 10;
-                                fragment.children[0].children[2].children[0].innerHTML = item.damage;
-                                fragment.children[0].children[3].children[0].innerHTML = item.reach;
-                                nextChild = 4;
-                            }
-                            else if(item.type === Item.ARMOR) {
-                                fragment = document.getElementById("template_item_armor").content.cloneNode(true);
-                                fragment.children[0].children[0].children[0].innerHTML = Math.round(item.getValue(model.modules.player.weights));
-                                fragment.children[0].children[1].children[0].innerHTML = item.health;
-                                fragment.children[0].children[2].children[0].innerHTML = item.regen;
-                                fragment.children[0].children[3].children[0].innerHTML = item.regenSpeed;
-                                nextChild = 4;
-                            }
-                            else {
-                                fragment = document.getElementById("template_item_default").content.cloneNode(true);
-                                fragment.children[0].children[0].children[0].innerHTML = Math.round(item.getValue(model.modules.player.weights));
-                                nextChild = 1;
-                            }
-
-                            let height = Math.ceil(100 / Object.keys(item.stats).length * 100) / 100;
-                            for(let name in item.stats) {
-                                let div = document.createElement("div");
-                                div.className = "progress-bar bg-" + name;
-                                div.style.position = "relative";
-                                div.style.height = height + "%";
-
-                                div.style.transform = Utility.getProgressBarTransformCSS(item.stats[name], item.getStatRoll(true));
-
-                                fragment.children[0].children[nextChild].appendChild(div);
-                            }
-
-                            let elem = Array.prototype.slice.call(fragment.childNodes, 0)[1];
-
-                            
-                            if(existingElem != null)
-                                existingElem.parentNode.removeChild(existingElem);
-                            
-                            itemCache.set(item, elem);
-
-                            switch(item._inventory.id) {
-                            case Player.INVENTORY:
-                                if(item.type === Item.WEAPON)
-                                    containerInventoryWeapon.appendChild(fragment);
-                                else
-                                    containerInventoryArmor.appendChild(fragment);
-                                break;
-                            case Player.EQUIPMENT:
-                                let slotElem = document.getElementById("containerCharacterItemSlot" + item._inventory.data);
-                                slotElem.appendChild(fragment);
-                                break;
-                            case Player.BACKPACK:
-                                document.getElementById("containerItemBackpack").appendChild(fragment);
-                            }
-
-                            refreshItemProgress(item);
-                            refreshEnemyStats();
-
-                            elem.className += " item-rarity-" + item.rarity + " item-" + item.type;
-
-                            elem.onclick = (e) => {
-                                model.modules.menu.createItem(e.clientX, e.clientY, item, model.modules.player,
-                                    (slot) => {
-                                        model.modules.player.equipItem(item, slot);
-                                    },
-                                    () => {
-                                        let rollsArr = [10, 100, 1000];
-
-                                        model.modules.menu.createItemReroll(e.clientX, e.clientY, item, model.modules.player, rerolls => {
-                                            model.modules.player.rerollItem(item, rerolls);
-                                        });
-                                    },
-                                    () => model.modules.player.sellItem(item),
-                                    () => model.modules.player.backpackItem(item));
-                            };
-                        }
-                    } catch(e){
-                        console.error(e);
+                    else if(item._deleted) {
+                        continue;
                     }
-                });
+                    let fragment;
+                    let nextChild = 0;
 
-                model.modules.battle.on("playerUpdated", player => {
-                    try {
-                        let l = player.inventory.length;
-                        for(let i = 0; i < l; i++) {
-                            let item = player.inventory[i];
-
-                            if(item._inventory.id !== Player.EQUIPMENT) 
-                                continue;
-
-                            if(item == null)
-                                continue;
-
-                            refreshItemProgress(item);
-                        }
-                    } catch(e){console.error(e);}
-                });
-            })();
-
-            model.modules.player.on("rageChanged", (value, max) => {
-                document.getElementById("progressPlayerRage").style.transform = Utility.getProgressBarTransformCSS(value, max);
-            });
-
-            model.modules.player.on("frenzyChanged", (value, max) => {
-                document.getElementById("progressPlayerFrenzy").style.transform = Utility.getProgressBarTransformCSS(value, max);
-            });
-
-            model.modules.player.on("statsUpdated", player => {
-                try {
-                    document.getElementById("textPlayerLevel").innerHTML = model.modules.player.level;
-                    document.getElementById("textPlayerXP").innerHTML = model.modules.player.xp + " / " + model.modules.player.getCurrentMaxXP() + " XP";
-                    document.getElementById("progressPlayerXP").style.transform = Utility.getProgressBarTransformCSS(model.modules.player.xp, model.modules.player.getCurrentMaxXP());
-
-                    document.getElementById("textPlayerGold").innerHTML = player.gold.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-                    let containerStats = document.getElementById("containerStats");
-                    
-                    if(containerStats.children.length === 0) {
-                        for(let name in player.stats) {
-                            let div = document.createElement("div");
-                            div.className = "icon-" + name;
-                            div.id = "textPlayer" + name.toUpperCase();
-
-                            containerStats.appendChild(div);
-                        }
+                    if(item.type === Item.WEAPON) {
+                        fragment = document.getElementById("template_item_weapon").content.cloneNode(true);
+                        fragment.children[0].children[0].children[0].innerHTML = Utility.prettify(item.getValue(player.weights));
+                        fragment.children[0].children[1].children[0].innerHTML = Math.floor(item.damageSpeed * 10) / 10;
+                        fragment.children[0].children[2].children[0].innerHTML = Utility.prettify(item.damage);
+                        fragment.children[0].children[3].children[0].innerHTML = item.reach;
+                        nextChild = 4;
                     }
-
-                    let total = 0;
-                    for(let name in player.stats) {
-                        let cur = player.stats[name].total;
-                        total += cur;
-                        containerStats.querySelector("#textPlayer" + name.toUpperCase()).innerHTML = ": " + cur + " (L:" + player.stats[name].level + ", I:" + player.stats[name].item + ", T:" + player.stats[name].trained + ")";
-                    }
-
-                    document.getElementById("textTotalStats").innerHTML = total;
-                } catch(e){console.error(e);}
-            });
-
-            model.modules.player.on("itemRerolled", (originalValue, newValue) => {
-                let description = "Item successfully rerolled<br><br>Old value: " + Utility.prettify(originalValue) + "<br>New value: " + Utility.prettify(newValue);
-                model.modules.menu.create(Math.floor(window.innerWidth / 2 - window.innerWidth * 0.1), Math.floor(window.innerHeight / 2 - window.innerWidth * 0.05), "20vw", "10vw", "Item Rerolled", description);
-            });
-
-            model.modules.battle.on("nextWaveStarted", (wave, subWave, maxSubWave, highestWave, highestWaveSubWave, maxSubWaveCurrentZone) => {
-                try {
-                    document.getElementById("textBattleWave").innerHTML = "Wave " + wave;
-                    document.getElementById("progressBattleWave").style.transform = Utility.getProgressBarTransformCSS(subWave, maxSubWave);
-                    document.getElementById("textBattleHighestWave").innerHTML = highestWave + "." + highestWaveSubWave;
-                    document.getElementById("progressBattleMaxSubWaveCurrentZone").style.transform = Utility.getProgressBarTransformCSS(maxSubWaveCurrentZone, maxSubWave);
-
-                    let containerProgressRarityChance = document.getElementById("containerProgressRarityChance");
-
-                    let offset = Item.getRarityRollOffset(wave);
-
-                    containerProgressRarityChance.innerHTML = "";
-
-                    let startingRarity = Item.getRarityRollStartingRarity(wave);
-
-                    for(let i = 0; i < 5; i++) {
-                        //TODO merge with item.js func maybe
-                        let div = document.createElement("div");
-                        div.className = "progress-bar item-rarity-" + (i + startingRarity);
-
-                        div.style.transform = Utility.getProgressBarTransformCSS(offset, Math.pow(10, i));
-                        containerProgressRarityChance.appendChild(div);
-                    }
-                    
-
-                } catch(e) {console.error(e);}
-            });
-
-            model.modules.battle.on("playerUpdated", (player, playerHealthChange) => {
-                try {
-                    if(model.flags.enableDamageNumbers) {
-                        if(playerHealthChange > 0) 
-                            floateys.createFloatingNumber("+" + (Math.ceil(playerHealthChange * 10) / 10), "75%", "85%", "c-teal");
-                        else if(playerHealthChange < 0)
-                            floateys.createFloatingNumber((Math.ceil(playerHealthChange * 100) / 100), "75%", "85%", "c-red");
-                    }
-
-                    document.getElementById("textPlayerHealth").innerHTML = Math.ceil(player.health);
-                    document.getElementById("textPlayerMaxHealth").innerHTML = player.maxHealth;
-                    document.getElementById("progressPlayerHealth").style.transform = Utility.getProgressBarTransformCSS(player.health, player.maxHealth);
-                } catch(e) {console.error(e);}
-            });
-
-            model.modules.battle.on("enemyDamaged", (enemy, damage, playerItemId) => {
-                try {
-                    if(model.flags.enableDamageNumbers)
-                        floateys.createFloatingNumber("-" + (Math.ceil(damage * 10) / 10), (playerItemId === 1 ? enemy.screenX : enemy.screenX + 12) + "%", (enemy.screenY + 2) + "%", "c-red");
-
-                    let elem = document.getElementById("enemy" + enemy.id);
-                    if(elem != null) {
-                        elem.querySelector(".progress-bar-text").innerHTML = Math.ceil(Math.max(0, enemy.health)) + "/" + enemy.maxHealth;
-                        elem.querySelector(".progress-bar").style.transform = Utility.getProgressBarTransformCSS(enemy.health, enemy.maxHealth);
-                    }
-                } catch(e) {console.error(e);}
-            });
-
-            model.modules.battle.on("enemyDodged", (enemy, playerItemId) => {
-                if(model.flags.enableDamageNumbers)
-                    floateys.createFloatingNumber("Dodged", (playerItemId === 1 ? enemy.screenX : enemy.screenX + 12) + "%", (enemy.screenY + 2) + "%", "c-green");
-
-            });
-
-            model.modules.battle.on("playerDodged", player => {
-                if(model.flags.enableDamageNumbers)
-                    floateys.createFloatingNumber("Dodged", "75%", "85%", "c-green");
-
-            });
-
-            model.modules.battle.on("enemyUpdated", enemy => {
-                try {
-                    refreshEnemyProgress(enemy);
-                } catch(e) {console.error(e);}
-            });
-
-
-            model.modules.battle.on("enemiesRemoved", enemies => {
-                try {
-                    let containerBattleEnemy = document.getElementById("containerBattleEnemy");
-
-                    if(enemies == null) {
-                        let elems = Array.from(containerBattleEnemy.children);
-                        let l = elems.length;
-                        for(let i = 0; i < l; i++) {
-                            if(elems[i].id !== "enemyRemoved")
-                                containerBattleEnemy.removeChild(elems[i]);
-                        }
+                    else if(item.type === Item.ARMOR) {
+                        fragment = document.getElementById("template_item_armor").content.cloneNode(true);
+                        fragment.children[0].children[0].children[0].innerHTML = Utility.prettify(item.getValue(player.weights));
+                        fragment.children[0].children[1].children[0].innerHTML = Utility.prettify(item.health);
+                        fragment.children[0].children[2].children[0].innerHTML = Utility.prettify(item.regen);
+                        fragment.children[0].children[3].children[0].innerHTML = item.regenSpeed;
+                        nextChild = 4;
                     }
                     else {
-                        let l = enemies.length;
-                        for(let i = 0; i < l; i++) {
-                            let enemy = containerBattleEnemy.querySelector("#enemy" + enemies[i].id)
-                            if(enemy != null) {
-                                enemy.id = "enemyRemoved";
-
-                                setTimeout(() => containerBattleEnemy.removeChild(enemy), 1000);
-                            }
-                        }
+                        fragment = document.getElementById("template_item_default").content.cloneNode(true);
+                        fragment.children[0].children[0].children[0].innerHTML = Utility.prettify(item.getValue(player.weights));
+                        nextChild = 1;
                     }
-                } catch(e) {console.error(e);}
-            });
 
-            model.modules.battle.on("enemiesAdded", enemies => {
-                try {
-                    let fragmentContainer = document.createDocumentFragment();
+                    let height = Math.ceil(100 / Object.keys(item.stats).length * 100) / 100;
+                    for(let name in item.stats) {
+                        let div = document.createElement("div");
+                        div.className = "progress-bar bg-" + name;
+                        div.style.position = "relative";
+                        div.style.height = height + "%";
+
+                        div.style.transform = Utility.getProgressBarTransformCSS(item.stats[name], item.getStatRoll(true));
+
+                        fragment.children[0].children[nextChild].appendChild(div);
+                    }
+
+                    let elem = Array.prototype.slice.call(fragment.childNodes, 0)[1];
+
+                    
+                    if(existingElem != null)
+                        existingElem.parentNode.removeChild(existingElem);
+                    
+                    itemCache.set(item, elem);
+
+                    switch(item._inventory.id) {
+                    case Player.INVENTORY:
+                        if(item.type === Item.WEAPON)
+                            containerInventoryWeapon.appendChild(fragment);
+                        else
+                            containerInventoryArmor.appendChild(fragment);
+                        break;
+                    case Player.EQUIPMENT:
+                        let slotElem = document.getElementById("containerCharacterItemSlot" + item._inventory.data);
+                        slotElem.appendChild(fragment);
+                        break;
+                    case Player.BACKPACK:
+                        document.getElementById("containerItemBackpack").appendChild(fragment);
+                    }
+
+                    refreshItemProgress(item);
+                    refreshEnemyStats(null, null, zone);
+
+                    elem.className += " item-rarity-" + item.rarity + " item-" + item.type;
+
+                    elem.onclick = (e) => {
+                        model.modules.menu.createItem(e.clientX, e.clientY, item, player,
+                            (slot) => {
+                                player.equipItem(item, slot);
+                            },
+                            () => {
+                                let rollsArr = [10, 100, 1000];
+
+                                model.modules.menu.createItemReroll(e.clientX, e.clientY, item, player, rerolls => {
+                                    player.rerollItem(item, rerolls);
+                                });
+                            },
+                            () => player.sellItem(item),
+                            () => player.backpackItem(item));
+                    };
+                }
+            } catch(e){
+                console.error(e);
+            }
+        });
+        
+        zone.on("playerUpdated", player => {
+            try {
+                let l = player.inventory.length;
+                for(let i = 0; i < l; i++) {
+                    let item = player.inventory[i];
+
+                    if(item._inventory.id !== Player.EQUIPMENT) 
+                        continue;
+
+                    if(item == null)
+                        continue;
+
+                    refreshItemProgress(item);
+                }
+            } catch(e){console.error(e);}
+        });
+
+        zone.on("rageChanged", (value, max) => {
+            document.getElementById("progressPlayerRage").style.transform = Utility.getProgressBarTransformCSS(value, max);
+        });
+
+        zone.on("frenzyChanged", (value, max) => {
+            document.getElementById("progressPlayerFrenzy").style.transform = Utility.getProgressBarTransformCSS(value, max);
+        });
+
+        zone.on("statsUpdated", player => {
+            try {
+                document.getElementById("textPlayerLevel").innerHTML = player.level;
+                document.getElementById("textPlayerXP").innerHTML = player.xp + " / " + player.getCurrentMaxXP() + " XP";
+                document.getElementById("progressPlayerXP").style.transform = Utility.getProgressBarTransformCSS(player.xp, player.getCurrentMaxXP());
+
+                document.getElementById("textPlayerGold").innerHTML = Utility.prettify(player.gold);
+
+                let containerStats = document.getElementById("containerStats");
+                
+                if(containerStats.children.length === 0) {
+                    for(let name in player.stats) {
+                        let div = document.createElement("div");
+                        div.className = "icon-" + name;
+                        div.id = "textPlayer" + name.toUpperCase();
+
+                        containerStats.appendChild(div);
+                    }
+                }
+
+                let total = 0;
+                for(let name in player.stats) {
+                    let cur = player.stats[name].total;
+                    total += cur;
+                    containerStats.querySelector("#textPlayer" + name.toUpperCase()).innerHTML = ": " + cur + " (L:" + player.stats[name].level + ", I:" + player.stats[name].item + ", T:" + player.stats[name].trained + ")";
+                }
+
+                document.getElementById("textTotalStats").innerHTML = total;
+            } catch(e){console.error(e);}
+        });
+
+        zone.on("itemRerolled", (originalValue, newValue) => {
+            let description = "Item successfully rerolled<br><br>Old value: " + Utility.prettify(originalValue) + "<br>New value: " + Utility.prettify(newValue);
+            model.modules.menu.create(Math.floor(window.innerWidth / 2 - window.innerWidth * 0.1), Math.floor(window.innerHeight / 2 - window.innerWidth * 0.05), "20vw", "10vw", "Item Rerolled", description);
+        });
+
+        zone.on("nextWaveStarted", (wave, subWave, maxSubWave, highestWave, highestWaveSubWave, maxSubWaveCurrentZone, targetWave) => {
+            try {
+                document.getElementById("textTargetWave").innerHTML = targetWave == null ? "None" : targetWave;
+
+                document.getElementById("textBattleWave").innerHTML = "Wave " + wave;
+                document.getElementById("progressBattleWave").style.transform = Utility.getProgressBarTransformCSS(subWave, maxSubWave);
+                document.getElementById("textBattleHighestWave").innerHTML = highestWave + "." + highestWaveSubWave;
+                document.getElementById("progressBattleMaxSubWaveCurrentZone").style.transform = Utility.getProgressBarTransformCSS(maxSubWaveCurrentZone, maxSubWave);
+
+                let containerProgressRarityChance = document.getElementById("containerProgressRarityChance");
+
+                let offset = Item.getRarityRollOffset(wave);
+
+                containerProgressRarityChance.innerHTML = "";
+
+                let startingRarity = Item.getRarityRollStartingRarity(wave);
+
+                for(let i = 0; i < 5; i++) {
+                    //TODO merge with item.js func maybe
+                    let div = document.createElement("div");
+                    div.className = "progress-bar item-rarity-" + (i + startingRarity);
+
+                    div.style.transform = Utility.getProgressBarTransformCSS(offset, Math.pow(10, i));
+                    containerProgressRarityChance.appendChild(div);
+                }
+                
+
+            } catch(e) {console.error(e);}
+        });
+
+        zone.on("playerUpdated", (player, playerHealthChange) => {
+            try {
+                if(model.flags.enableDamageNumbers) {
+                    if(playerHealthChange > 0) 
+                        floateys.createFloatingNumber("+" + (Math.ceil(playerHealthChange * 10) / 10), "75%", "85%", "c-teal");
+                    else if(playerHealthChange < 0)
+                        floateys.createFloatingNumber((Math.ceil(playerHealthChange * 100) / 100), "75%", "85%", "c-red");
+                }
+
+                document.getElementById("textPlayerHealth").innerHTML = Utility.prettify(player.health);
+                document.getElementById("textPlayerMaxHealth").innerHTML = Utility.prettify(player.maxHealth);
+                document.getElementById("progressPlayerHealth").style.transform = Utility.getProgressBarTransformCSS(player.health, player.maxHealth);
+            } catch(e) {console.error(e);}
+        });
+
+        zone.on("enemyDamaged", (enemy, damage, playerItemId) => {
+            try {
+                if(model.flags.enableDamageNumbers)
+                    floateys.createFloatingNumber("-" + Utility.prettify(damage * 10), (playerItemId === 1 ? enemy.screenX : enemy.screenX + 12) + "%", (enemy.screenY + 2) + "%", "c-red");
+
+                let elem = document.getElementById("enemy" + enemy.id);
+                if(elem != null) {
+                    elem.querySelector(".progress-bar-text").innerHTML = Utility.prettify(Math.max(0, enemy.health)) + "/" + enemy.maxHealth;
+                    elem.querySelector(".progress-bar").style.transform = Utility.getProgressBarTransformCSS(enemy.health, enemy.maxHealth);
+                }
+            } catch(e) {console.error(e);}
+        });
+
+        zone.on("enemyDodged", (enemy, playerItemId) => {
+            if(model.flags.enableDamageNumbers)
+                floateys.createFloatingNumber("Dodged", (playerItemId === 1 ? enemy.screenX : enemy.screenX + 12) + "%", (enemy.screenY + 2) + "%", "c-green");
+
+        });
+
+        zone.on("playerDodged", player => {
+            if(model.flags.enableDamageNumbers)
+                floateys.createFloatingNumber("Dodged", "75%", "85%", "c-green");
+
+        });
+
+        zone.on("enemyUpdated", enemy => {
+            try {
+                refreshEnemyProgress(enemy);
+            } catch(e) {console.error(e);}
+        });
+
+
+        zone.on("enemiesRemoved", enemies => {
+            try {
+                let containerBattleEnemy = document.getElementById("containerBattleEnemy");
+
+                if(enemies == null) {
+                    let elems = Array.from(containerBattleEnemy.children);
+                    let l = elems.length;
+                    for(let i = 0; i < l; i++) {
+                        if(elems[i].id !== "enemyRemoved")
+                            containerBattleEnemy.removeChild(elems[i]);
+                    }
+                }
+                else {
                     let l = enemies.length;
                     for(let i = 0; i < l; i++) {
-                        let enemy = enemies[i];
-                        let fragment = document.getElementById("template_enemy").content.cloneNode(true);
+                        let enemy = containerBattleEnemy.querySelector("#enemy" + enemies[i].id)
+                        if(enemy != null) {
+                            enemy.id = "enemyRemoved";
 
-                        let containerProgress = fragment.querySelector("[data-id=containerProgress]");
-                        
-                        for(let name in enemy.stats) {
-                            let div = document.createElement("div");
-                            div.className = "progress-bar bg-" + name;
-                            div.style.position = "relative";
-                            div.style.height = "6px";
-                            div.style.border = "1px solid black";
-                            div.style.marginTop = "-1px";
-                            div.dataset.id = "progress" + name;
-
-                            containerProgress.appendChild(div);
+                            setTimeout(() => containerBattleEnemy.removeChild(enemy), 1000);
                         }
-                                        
-                        
-                        refreshEnemyStats(fragment.children[0], enemy);
-
-                        let elem = Array.prototype.slice.call(fragment.childNodes, 0)[1];
-                        elem.id = "enemy" + enemy.id;
-                        elem.style.left = enemy.screenX + "%";
-                        elem.style.top = enemy.screenY + "%";
-
-                        fragmentContainer.appendChild(fragment);
                     }
-                    
-                    let containerBattleEnemy = document.getElementById("containerBattleEnemy");
-                    containerBattleEnemy.appendChild(fragmentContainer);
-                } catch(e) {console.error(e);}
-            });
+                }
+            } catch(e) {console.error(e);}
+        });
 
-            model.modules.world.on("timeUpdated", (r, g, b, hours, minutes) => {
-                document.getElementById("containerWorld").style.backgroundColor = "rgb(" + r + "," + g + "," + b + ")";
-                document.getElementById("textCurrentTime").innerHTML = (hours<10?"0"+hours:hours) + ":" + (minutes<10?"0"+minutes:minutes);
-            })
-        })();
+        zone.on("enemiesAdded", enemies => {
+            try {
+                let fragmentContainer = document.createDocumentFragment();
+                let l = enemies.length;
+                for(let i = 0; i < l; i++) {
+                    let enemy = enemies[i];
+                    let fragment = document.getElementById("template_enemy").content.cloneNode(true);
+
+                    let containerProgress = fragment.querySelector("[data-id=containerProgress]");
+                    
+                    for(let name in enemy.stats) {
+                        let div = document.createElement("div");
+                        div.className = "progress-bar bg-" + name;
+                        div.style.position = "relative";
+                        div.style.height = "6px";
+                        div.style.border = "1px solid black";
+                        div.style.marginTop = "-1px";
+                        div.dataset.id = "progress" + name;
+
+                        containerProgress.appendChild(div);
+                    }
+                                    
+                    
+                    refreshEnemyStats(fragment.children[0], enemy, zone);
+
+                    let elem = Array.prototype.slice.call(fragment.childNodes, 0)[1];
+                    elem.id = "enemy" + enemy.id;
+                    elem.style.left = enemy.screenX + "%";
+                    elem.style.top = enemy.screenY + "%";
+
+                    fragmentContainer.appendChild(fragment);
+                }
+                
+                let containerBattleEnemy = document.getElementById("containerBattleEnemy");
+                containerBattleEnemy.appendChild(fragmentContainer);
+            } catch(e) {console.error(e);}
+        });
+
+        model.modules.world.on("timeUpdated", (minCol, maxCol, hours, minutes) => {
+            let type = model.modules.zones.getZoneType(model.modules.zones.getFocusedZone());
+            if(type === Zones.MAIN)
+                document.getElementById("containerWorld").style.backgroundColor = "rgb(" + minCol + "," + maxCol + "," + minCol + ")";
+            else if(type === Zones.QUEST)
+                document.getElementById("containerWorld").style.backgroundColor = "rgb(" + maxCol + "," + maxCol + "," + minCol + ")";
+            else
+                document.getElementById("containerWorld").style.backgroundColor = "rgb(" + 255 + "," + 255 + "," + 255 + ")";
+
+            document.getElementById("textCurrentTime").innerHTML = (hours<10?"0"+hours:hours) + ":" + (minutes<10?"0"+minutes:minutes);
+        });
 
         for(let module in model.modules) {
             module = model.modules[module];
@@ -632,7 +694,7 @@ let debug = (function() {
             model.modules[module].disableEvents();
 
         while(dif >= frameTime) {
-            model.modules.battle.update(frameTime, model.clock, model.modules.player);
+            loop(frameTime);
             dif -= frameTime;
             model.clock += frameTime;
         }
@@ -680,7 +742,9 @@ let debug = (function() {
             floateys.update(frameTime);
 
             document.getElementById("textTimer").innerHTML = Utility.getFormattedTime(model.clock);
-            document.getElementById("textTimerRun").innerHTML = Utility.getFormattedTime(model.modules.battle.timestampTimeElapsedInRun);
+
+            let zone = model.modules.zones.getFocusedZone();
+            document.getElementById("textTimerRun").innerHTML = Utility.getFormattedTime(zone.battle.timestampTimeElapsedInRun);
 
             if(model.clock % 5000 === 0)
                 save();
@@ -692,7 +756,7 @@ let debug = (function() {
 
     function loop(frameTime) {
         if(!paused) {
-            model.modules.battle.update(frameTime, model.clock, model.modules.player);
+            model.modules.zones.update(frameTime);
         }
     }
 

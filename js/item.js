@@ -35,7 +35,7 @@ const Item = ((window, document) => {
             this._battleClockRegenSpeedFinish = init._battleClockRegenSpeedFinish || 0;
         }
     
-        generateRandom(wave, rarity, type) {
+        generateRandom(zoneType, wave, rarity, type) {
             if(rarity == null) {
                 this.rarity = Item.getRarityRoll(wave);
             }
@@ -54,9 +54,9 @@ const Item = ((window, document) => {
             }
 
             if(this.type === Item.WEAPON) {
-                this.damage = this.getDamageRoll();
-                this.damageSpeed = this.getDamageSpeedRoll();
-                this.reach = this.getReachRoll();
+                this.damage = this.getDamageRoll(false, zoneType);
+                this.damageSpeed = this.getDamageSpeedRoll(false, zoneType);
+                this.reach = this.getReachRoll(false, zoneType);
 
                 this.health = 0;
                 this.regen = 0;
@@ -67,13 +67,13 @@ const Item = ((window, document) => {
                 this.damageSpeed = 0;
                 this.reach = 0;
 
-                this.health = this.getHealthRoll();
-                this.regen = this.getRegenRoll();
-                this.regenSpeed = this.getRegenSpeedRoll();
+                this.health = this.getHealthRoll(false, zoneType);
+                this.regen = this.getRegenRoll(false, zoneType);
+                this.regenSpeed = this.getRegenSpeedRoll(false, zoneType);
             }
             
             for(let name in this.stats)
-                this.stats[name] = this.getStatRoll();
+                this.stats[name] = this.getStatRoll(false, zoneType);
     
             return this;
         }
@@ -104,32 +104,32 @@ const Item = ((window, document) => {
             return rarity;
         }
 
-        getStatRoll(max) {
-            return Item.getRoll(0, 5 * (this.rarity + 1), 0.9, 4, 0.1, 1, max)
+        getStatRoll(max, zoneType) {
+            return Item.getRoll(0, 5 * (this.rarity + 1), 0.9, zoneType === Zones.QUEST ? 2 : 4, 0.1, 1, max)
         }
 
-        getDamageRoll(max) {
-            return Item.getRoll(2, 10, 0.8, 50, 0.2, this.rarity + 1, max);
+        getDamageRoll(max, zoneType) {
+            return Item.getRoll(2, 10, 0.8, zoneType === Zones.QUEST ? 5 : 50, 0.2, this.rarity + 1, max);
         }
 
-        getHealthRoll(max) {
-            return Item.getRoll(20, 100, 0.8, 50, 0.2, this.rarity + 1, max);
+        getHealthRoll(max, zoneType) {
+            return Item.getRoll(20, 100, 0.8, zoneType === Zones.QUEST ? 5 : 50, 0.2, this.rarity + 1, max);
         }
 
-        getRegenRoll(max) {
-            return Item.getRoll(10, 30, 0.8, 50, 0.2, this.rarity + 1, max) / 10;
+        getRegenRoll(max, zoneType) {
+            return Item.getRoll(10, 30, 0.8, zoneType === Zones.QUEST ? 5 : 50, 0.2, this.rarity + 1, max) / 10;
         }
 
-        getDamageSpeedRoll(max) {
-            return Item.getRoll(2, 20, 0.8, 50, 0.2, 1, max) / 10;
+        getDamageSpeedRoll(max, zoneType) {
+            return Item.getRoll(2, 20, 0.8, zoneType === Zones.QUEST ? 5 : 50, 0.2, 1, max) / 10;
         }
 
-        getRegenSpeedRoll(max) {
-            return Item.getRoll(1, 30, 0.8, 50, 0.2, 1, max) / 100;
+        getRegenSpeedRoll(max, zoneType) {
+            return Item.getRoll(1, 30, 0.8, zoneType === Zones.QUEST ? 5 : 50, 0.2, 1, max) / 100;
         }
 
-        getReachRoll(max) {
-            return Item.getRoll(0, this.rarity + 1, 0.8, 50, 0.2, 1, max);
+        getReachRoll(max, zoneType) {
+            return Item.getRoll(0, this.rarity + 1, 0.8, zoneType === Zones.QUEST ? 5 : 50, 0.2, 1, max);
         }
 
 
