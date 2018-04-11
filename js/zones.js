@@ -110,8 +110,8 @@ const Zones = ((window, document) => {
                 return false;
             }
 
-            this.zones[Zones.MAIN].player.addItem(new Item().generateRandom(Zones.MAIN, null, zone.rewardItemRarity));
-            this.zones[Zones.MAIN].player.addItem(new Item().generateRandom(Zones.MAIN, null, zone.rewardItemRarity));
+            this.zones[Zones.MAIN].modules.player.addItem(new Item().generateRandom(Zones.MAIN, null, zone.rewardItemRarity));
+            this.zones[Zones.MAIN].modules.player.addItem(new Item().generateRandom(Zones.MAIN, null, zone.rewardItemRarity));
             
             return this.changeFocusedZone(0);
         }

@@ -1,3 +1,6 @@
+2018-04-11 - V0.6.2
+* Fix crash on Quest end.
+
 2018-04-11 - V0.6.1
 * Quest Zone item drop scaling made more harsh than what it was originally (though still better than Main Zone scaling).
 * Now get 2 items for Quest completion (up from 1).
