@@ -113,6 +113,8 @@ const Zones = ((window, document) => {
             this.zones[Zones.MAIN].modules.player.addItem(new Item().generateRandom(Zones.MAIN, null, zone.rewardItemRarity));
             this.zones[Zones.MAIN].modules.player.addItem(new Item().generateRandom(Zones.MAIN, null, zone.rewardItemRarity));
             
+            this.emit("zoneEnded", zone);
+            
             return this.changeFocusedZone(0);
         }
 
