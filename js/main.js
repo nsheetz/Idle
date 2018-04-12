@@ -523,7 +523,7 @@ let debug = (function() {
             } catch(e){console.error(e);}
         });
 
-        zone.modules.player.on("itemRerolled", (originalValue, newValue) => {
+        zone.modules.player.on("itemRerolled", (originalValue, newValue, items) => {
             let description = "Item successfully rerolled<br><br>Old value: " + Utility.prettify(originalValue) + "<br>New value: " + Utility.prettify(newValue);
             model.modules.menu.create(Math.floor(window.innerWidth / 2 - window.innerWidth * 0.1), Math.floor(window.innerHeight / 2 - window.innerWidth * 0.05), "20vw", "10vw", "Item Rerolled", description);
         });
