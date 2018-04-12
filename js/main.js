@@ -12,10 +12,11 @@ let debug = (function() {
         flags: {
             clickedHelp: false,
             lowPerformanceMode: false,
+            aurasExpanded: true,
             enableDamageNumbers: true,
         },
         version: 12,
-        subVersion: 4,
+        subVersion: 5,
     }
 
     let assets = {
@@ -23,7 +24,7 @@ let debug = (function() {
         imageVillageLightmap: new Image()
     }
 
-    let floateys = new Floateys(null, document.getElementById("template_floatey"), document.getElementById("containerFloateys"));
+    let floateys = null;
 
     assets.imageVillage.src = "img/village.png";
     assets.imageVillageLightmap.src = "img/village_lightmap.png";
@@ -32,181 +33,214 @@ let debug = (function() {
 
     let itemCache = new Map();
 
-    load();
-    onLowPerformanceChecked(model.flags.lowPerformanceMode, true);
-    onEnableDamageNumbersChecked(model.flags.enableDamageNumbers, true);
+    document.addEventListener('DOMContentLoaded', function() {
+        floateys = new Floateys(null, document.getElementById("template_floatey"), document.getElementById("containerFloateys"));
 
-    //todo
-    if(model.modules.zones.zones[Zones.MAIN].modules.player.inventory.length === 0) {
-        model.modules.zones.zones[Zones.MAIN].modules.player.addItem(new Item().generateRandom(Zones.MAIN, null, 0, Item.WEAPON));
-        model.modules.zones.zones[Zones.MAIN].modules.player.addItem(new Item().generateRandom(Zones.MAIN, null, 0, Item.ARMOR));
-    }
-
-    try {
-        if(navigator.userAgent.indexOf('Firefox') > -1) {
-            document.getElementById("checkboxLowPerformance").disabled = true;
-            onLowPerformanceChecked(true, true);
+        load();
+        onLowPerformanceChecked(model.flags.lowPerformanceMode, true);
+        onAurasExpandedClicked(model.flags.aurasExpanded, true);
+        onEnableDamageNumbersChecked(model.flags.enableDamageNumbers, true);
+    
+        //todo
+        if(model.modules.zones.zones[Zone.MAIN].modules.player.inventory.length === 0) {
+            model.modules.zones.zones[Zone.MAIN].modules.player.addItem(new Item().generateRandom(Zone.MAIN, null, 0, Item.WEAPON));
+            model.modules.zones.zones[Zone.MAIN].modules.player.addItem(new Item().generateRandom(Zone.MAIN, null, 0, Item.ARMOR));
         }
-    } catch(e) {console.error(e)}
 
-    try {
-        let buttonHelp = document.getElementById("buttonHelp");
-        if(!model.flags.clickedHelp)
-            Utility.swapClass("button-c-", "button-c-yellow", buttonHelp);
-        document.getElementById("buttonHelp").onclick = function(e) {
-            model.flags.clickedHelp = true;
-            Utility.swapClass("button-c-", "button-c-default", buttonHelp);
-
-            let description = "<div style='text-align:left'>";
-            description += "<p>This is a game about fighting enemies and finding new weapons.</p>";
-            description += "<p>Your inventory is at the bottom of the screen. You start with two weapons. You can have a maximum of two weapons equipped. Click an item, then click Equip in the menu that opens, to equip an item.</p>";
-            description += "<p>To start fighting, click the Battle button on the left panel. The game will now always fight and collect new weapons, as well as automatically sell them.</p>";
-            description += "<p>Equip stronger items and get further!</p>";
-            description += "<hr>"
-            description += "<p>Each weapon has a number of stats on it.</p>"
-            description += "<div><span class='icon-damage'></span> - Damage - the weapon's damage</div>";
-            description += "<div><span class='icon-health' style='float:left'></span> - Health - added to the player's health</div>";
-            description += "<div><span class='icon-damagespeed'></span> - Damage Speed - attack speed of the weapon, in seconds</div>";
-            description += "<div><span class='icon-reach'></span> - Reach - how many enemies the weapon will hit at once, if there are multiple</div>";
-            description += "<div><span class='icon-str'></span> - If your STR is higher than enemy DEF, you will deal more damage (and vice versa, same for enemies).</div>";
-            description += "<div><span class='icon-def'></span> - If your DEF is higher than enemy STR, you will receive less damage (and vice versa, same for enemies)</div>";
-            description += "<div><span class='icon-agi'></span> - If your AGI is higher than enemy AGI, you will gain dodge chance (and vice versa). Each stat difference is 1% compounding dodge chance";
-            description += "</div>";
-            model.modules.menu.create(Math.floor(window.innerWidth / 2 - window.innerWidth * 0.25), Math.floor(window.innerHeight / 2 - window.innerWidth * 0.11) - 100, 
-            "50vw", "22vw", "Help", description);
-        }
-        document.getElementById("buttonBattle").onclick = e => {
-            let zone = model.modules.zones.getFocusedZone();
-            zone.modules.battle.startNewRun(zone.modules.player);
-        }
-        document.getElementById("buttonPause").onclick = function(e) {
-            paused = !paused;
-
-            if(paused) {
-                Utility.swapClass("button-c-", "button-c-red", this);
-                this.innerHTML = "Paused!";
+        try {
+            if(navigator.userAgent.indexOf('Firefox') > -1) {
+                document.getElementById("checkboxLowPerformance").disabled = true;
+                onLowPerformanceChecked(true, true);
             }
-            else {
-                Utility.swapClass("button-c-", "button-c-default", this);
-                this.innerHTML = "Pause";
+        } catch(e) {console.error(e)}
+    
+        try {
+            document.getElementById("buttonHideExpandAuras").onclick = () => {
+                model.flags.aurasExpanded = !model.flags.aurasExpanded;
+                onAurasExpandedClicked(model.flags.aurasExpanded);
             }
-        }
-
-        document.getElementById("buttonZoneTypeSwitchLeft").onclick = function(e) {
-            let zones = model.modules.zones;
-
-            let type = zones.getZoneType(zones.getFocusedZone());
-            zones.changeFocusedZone(--type);
-        }
-
-        document.getElementById("buttonZoneTypeSwitchRight").onclick = function(e) {
-            let zones = model.modules.zones;
-
-            let type = zones.getZoneType(zones.getFocusedZone());
-            zones.changeFocusedZone(++type);
-        }
-
-        document.getElementById("buttonToVillage").onclick = function(e) {
-            let date = new Date();
-            model.modules.menu.createVillage(date, assets.imageVillage, assets.imageVillageLightmap, window.innerWidth, window.innerHeight, () => {
-                let highestWave = model.modules.zones.zones[Zones.MAIN].modules.battle.highestWave;
-                highestWave = Math.floor(highestWave / 10);
-                if(highestWave === 0)
-                    return;
-                
-                model.modules.zones.createNewQuest(highestWave * 10, highestWave + 4);
-                model.modules.zones.zones[Zones.QUEST].modules.player.addItem(new Item().generateRandom(Zones.QUEST, null, 0, Item.WEAPON));
-                model.modules.zones.zones[Zones.QUEST].modules.player.addItem(new Item().generateRandom(Zones.QUEST, null, 0, Item.ARMOR));
-                model.modules.zones.changeFocusedZone(Zones.QUEST);
-            });
-        }
-
-        document.getElementById("buttonChangeValueWeights").onclick = function(e) {
-            let zone = model.modules.zones.getFocusedZone();
-            model.modules.menu.createChangeValueWeights(zone.modules.player, window.innerWidth, window.innerHeight);
-        }
-
-        document.getElementById("buttonExportSave").onclick = function(e) {
-            save();
-            let content = "Here's your save string!<br>";
-            content += "<textarea class='textareaSave'>";
-            content += localStorage._save0_;
-            content += "</textarea>";
-            let elem = model.modules.menu.create(Math.floor(window.innerWidth * 0.25), Math.floor(window.innerHeight * 0.39), 
-                        "40vw", "8vw", "Export save", content);
-            elem.querySelector('.textareaSave').select();
-        };
-
-        document.getElementById("buttonImportSave").onclick = function(e) {
-            let content = "Paste your save string here:<br>";
-            content += "<textarea class='textareaSave'></textarea><br>";
-            content += "<button class='button-c-default'>Import</button>";
-            let elem = model.modules.menu.create(Math.floor(window.innerWidth * 0.25), Math.floor(window.innerHeight * 0.39), 
-                        "40vw", "8vw", "Import save", content);
-            let textareaSave = elem.querySelector('.textareaSave');
-            elem.querySelector('button').onclick = function(e) {
-                localStorage._save0_ = textareaSave.value;
-                load();
-                elem.querySelector('.menu-x').onclick();
+        } catch(e) {console.error(e)}
+    
+        try {
+            let buttonHelp = document.getElementById("buttonHelp");
+            if(!model.flags.clickedHelp)
+                Utility.swapClass("button-c-", "button-c-yellow", buttonHelp);
+            document.getElementById("buttonHelp").onclick = function(e) {
+                model.flags.clickedHelp = true;
+                Utility.swapClass("button-c-", "button-c-default", buttonHelp);
+    
+                let description = "<div style='text-align:left'>";
+                description += "<p>This is a game about fighting enemies and finding new weapons.</p>";
+                description += "<p>Your inventory is at the bottom of the screen. You start with two weapons. You can have a maximum of two weapons equipped. Click an item, then click Equip in the menu that opens, to equip an item.</p>";
+                description += "<p>To start fighting, click the Battle button on the left panel. The game will now always fight and collect new weapons, as well as automatically sell them.</p>";
+                description += "<p>Equip stronger items and get further!</p>";
+                description += "<hr>"
+                description += "<p>Each weapon has a number of stats on it.</p>"
+                description += "<div><span class='icon-damage'></span> - Damage - the weapon's damage</div>";
+                description += "<div><span class='icon-health' style='float:left'></span> - Health - added to the player's health</div>";
+                description += "<div><span class='icon-damagespeed'></span> - Damage Speed - attack speed of the weapon, in seconds</div>";
+                description += "<div><span class='icon-reach'></span> - Reach - how many enemies the weapon will hit at once, if there are multiple</div>";
+                description += "<div><span class='icon-str'></span> - If your STR is higher than enemy DEF, you will deal more damage (and vice versa, same for enemies).</div>";
+                description += "<div><span class='icon-def'></span> - If your DEF is higher than enemy STR, you will receive less damage (and vice versa, same for enemies)</div>";
+                description += "<div><span class='icon-agi'></span> - If your AGI is higher than enemy AGI, you will gain dodge chance (and vice versa). Each stat difference is 1% compounding dodge chance";
+                description += "</div>";
+                model.modules.menu.create(Math.floor(window.innerWidth / 2 - window.innerWidth * 0.25), Math.floor(window.innerHeight / 2 - window.innerWidth * 0.11) - 100, 
+                "50vw", "22vw", "Help", description);
+            }
+            document.getElementById("buttonBattle").onclick = e => {
+                let zone = model.modules.zones.getFocusedZone();
+                zone.modules.battle.startNewRun(zone.modules.player);
+            }
+            document.getElementById("buttonPause").onclick = function(e) {
+                paused = !paused;
+    
+                if(paused) {
+                    Utility.swapClass("button-c-", "button-c-red", this);
+                    this.innerHTML = "Paused!";
+                }
+                else {
+                    Utility.swapClass("button-c-", "button-c-default", this);
+                    this.innerHTML = "Pause";
+                }
+            }
+    
+            document.getElementById("buttonZoneTypeSwitchLeft").onclick = function(e) {
+                let zones = model.modules.zones;
+    
+                let type = zones.getZoneType(zones.getFocusedZone());
+                zones.changeFocusedZone(--type);
+            }
+    
+            document.getElementById("buttonZoneTypeSwitchRight").onclick = function(e) {
+                let zones = model.modules.zones;
+    
+                let type = zones.getZoneType(zones.getFocusedZone());
+                zones.changeFocusedZone(++type);
+            }
+    
+            document.getElementById("buttonToVillage").onclick = function(e) {
+                let date = new Date();
+                let zone = model.modules.zones.zones[Zone.MAIN];
+                let player = zone.modules.player;
+                let battle = zone.modules.battle;
+    
+                model.modules.menu.createVillage(player, battle, date, assets.imageVillage, assets.imageVillageLightmap, window.innerWidth, window.innerHeight, (rarityChanceAuraMult, goldSpent) => {
+                    player.gold -= goldSpent;
+                    player.emit("statsUpdated", player);
+                    
+                    rarityChanceAuraMult -= 1;
+    
+                    let maxLevel = battle.getQuestMaxLevel();
+    
+                    model.modules.zones.createNewQuest(maxLevel, maxLevel / 10 + 4);
+                    model.modules.zones.zones[Zone.QUEST].modules.player.addItem(new Item().generateRandom(Zone.QUEST, null, 0, Item.WEAPON));
+                    model.modules.zones.zones[Zone.QUEST].modules.player.addItem(new Item().generateRandom(Zone.QUEST, null, 0, Item.ARMOR));
+    
+                    if(rarityChanceAuraMult > 0) {
+                        model.modules.zones.zones[Zone.QUEST].modules.auras.addAura(Aura.RARITY_CHANCE_INCREASED, 1000*60*60*48, rarityChanceAuraMult);
+                    }
+                    model.modules.zones.changeFocusedZone(Zone.QUEST);
+                });
+            }
+    
+            document.getElementById("buttonChangeValueWeights").onclick = function(e) {
+                let zone = model.modules.zones.getFocusedZone();
+                model.modules.menu.createChangeValueWeights(zone.modules.player, window.innerWidth, window.innerHeight);
+            }
+    
+            document.getElementById("buttonExportSave").onclick = function(e) {
+                save();
+                let content = "Here's your save string!<br>";
+                content += "<textarea class='textareaSave'>";
+                content += localStorage._save0_;
+                content += "</textarea>";
+                let elem = model.modules.menu.create(Math.floor(window.innerWidth * 0.25), Math.floor(window.innerHeight * 0.39), 
+                            "40vw", "8vw", "Export save", content);
+                elem.querySelector('.textareaSave').select();
             };
-            textareaSave.focus();
-        };
-
-        document.getElementById("buttonInventorySort").onclick = e => {
-            let zone = model.modules.zones.getFocusedZone();
-            zone.modules.player.sortInventory();
-        };
-        document.getElementById("buttonInventoryDestroyWeakItems").onclick = e => {
-            let zone = model.modules.zones.getFocusedZone();
-            zone.modules.player.destroyWeakItems();
-        };
-
-        document.getElementById("checkboxLowPerformance").onchange = function(e) {
-            model.flags.lowPerformanceMode = this.checked;
-            onLowPerformanceChecked(this.checked);
-        }
-
-        document.getElementById("checkboxEnableDamageNumbers").onchange = function(e) {
-            model.flags.enableDamageNumbers = this.checked;
-            onEnableDamageNumbersChecked(this.checked);
-        }
-
-        document.getElementById("containerProgressRarityChance").onclick = e => {
-            let zone = model.modules.zones.getFocusedZone();
-
-            let wave = zone.modules.battle.wave;
-            let startingRarity = Item.getRarityRollStartingRarity(wave);
-            let offset = Item.getRarityRollOffset(wave);
-
-            let description = '';
-
-            description += "Wave " + wave + "<br><br>";
-            let prcTotal = 100;
-            let arr = [];
-            for(let i = startingRarity + 6; i > startingRarity; i--) {
-                let prc = Math.floor((offset / Math.pow(10, i - startingRarity) * prcTotal) * 100000)/100000;
-                prcTotal -= prc;
-                arr[i - startingRarity] = prc;
+    
+            document.getElementById("buttonImportSave").onclick = function(e) {
+                let content = "Paste your save string here:<br>";
+                content += "<textarea class='textareaSave'></textarea><br>";
+                content += "<button class='button-c-default'>Import</button>";
+                let elem = model.modules.menu.create(Math.floor(window.innerWidth * 0.25), Math.floor(window.innerHeight * 0.39), 
+                            "40vw", "8vw", "Import save", content);
+                let textareaSave = elem.querySelector('.textareaSave');
+                elem.querySelector('button').onclick = function(e) {
+                    localStorage._save0_ = textareaSave.value;
+                    load();
+                    elem.querySelector('.menu-x').onclick();
+                };
+                textareaSave.focus();
+            };
+    
+            document.getElementById("buttonInventorySort").onclick = e => {
+                let zone = model.modules.zones.getFocusedZone();
+                zone.modules.player.sortInventory();
+            };
+            document.getElementById("buttonInventoryDestroyWeakItems").onclick = e => {
+                let zone = model.modules.zones.getFocusedZone();
+                zone.modules.player.destroyWeakItems();
+            };
+    
+            document.getElementById("checkboxLowPerformance").onchange = function(e) {
+                model.flags.lowPerformanceMode = this.checked;
+                onLowPerformanceChecked(this.checked);
             }
-            arr[0] = prcTotal;
-
-            for(let i = 0; i < arr.length; i++) {
-                description += "Rarity " + (i + startingRarity) + ": " + (Math.floor(arr[i] * 100000) / 100000) + "%<br>";
+    
+            document.getElementById("checkboxEnableDamageNumbers").onchange = function(e) {
+                model.flags.enableDamageNumbers = this.checked;
+                onEnableDamageNumbersChecked(this.checked);
             }
-
-            model.modules.menu.create(e.clientX, e.clientY, "20vw", "auto", "Rarity Chance Breakdown", description);
+    
+            document.getElementById("containerProgressRarityChance").onclick = e => {
+                let zone = model.modules.zones.getFocusedZone();
+    
+                let wave = zone.modules.battle.wave;
+                let startingRarity = Item.getRarityRollStartingRarity(wave);
+    
+                let offsetOffset = zone.modules.auras.getAllMultipliersOfActiveAuras(Aura.RARITY_CHANCE_INCREASED);
+                if(offsetOffset.length > 0)
+                    offsetOffset = offsetOffset.reduce((a, b) => a + b) * 10;
+                else
+                    offsetOffset = 0;
+                
+                let offset = Item.getRarityRollOffset(wave, offsetOffset);
+                
+    
+                let description = '';
+    
+                description += "Wave " + wave + "<br><br>";
+                let prcTotal = 100;
+                let arr = [];
+                for(let i = startingRarity + 6; i > startingRarity; i--) {
+                    let prc = Math.floor((offset / Math.pow(10, i - startingRarity) * prcTotal) * 100000)/100000;
+                    prcTotal -= prc;
+                    arr[i - startingRarity] = prc;
+                }
+                arr[0] = prcTotal;
+    
+                for(let i = 0; i < arr.length; i++) {
+                    description += "Rarity " + (i + startingRarity) + ": " + (Math.floor(arr[i] * 100000) / 100000) + "%<br>";
+                }
+    
+                model.modules.menu.create(e.clientX, e.clientY, "20vw", "auto", "Rarity Chance Breakdown", description);
+            }
+        } catch(e) {
+            console.error(e);
         }
-    } catch(e) {
-        console.error(e);
-    }
+    
+        try {
+            let zone = model.modules.zones.getFocusedZone();
+            document.getElementById("textPlayerHealth").innerHTML = Utility.prettify(zone.modules.player.health);
+            document.getElementById("textPlayerMaxHealth").innerHTML = Utility.prettify(zone.modules.player.maxHealth);
+        } catch(e) {
+            console.error(e);
+        }
 
-    try {
-        let zone = model.modules.zones.getFocusedZone();
-        document.getElementById("textPlayerHealth").innerHTML = Utility.prettify(zone.modules.player.health);
-        document.getElementById("textPlayerMaxHealth").innerHTML = Utility.prettify(zone.modules.player.maxHealth);
-    } catch(e) {
-        console.error(e);
-    }
+        offlineLoop();
+        window.requestAnimationFrame(coreLoop);
+    });
 
     function save() {
         localStorage.setItem("_save0_", JSON.stringify(model));
@@ -282,6 +316,29 @@ let debug = (function() {
         node.style.transform = Utility.getProgressBarTransformCSS(item._battleClockRegenSpeed, item._battleClockRegenSpeedFinish);
     }
 
+    function refreshRarityChance(wave, auras) {
+        let containerProgressRarityChance = document.getElementById("containerProgressRarityChance");
+
+        let offsetOffset = auras.getAllMultipliersOfActiveAuras(Aura.RARITY_CHANCE_INCREASED);
+        if(offsetOffset.length > 0)
+            offsetOffset = offsetOffset.reduce((a, b) => a + b) * 10;
+        else
+            offsetOffset = 0;
+        let offset = Item.getRarityRollOffset(wave, offsetOffset);
+
+        containerProgressRarityChance.innerHTML = "";
+
+        let startingRarity = Item.getRarityRollStartingRarity(wave);
+
+        for(let i = 0; i < 5; i++) {
+            //TODO merge with item.js func maybe
+            let div = document.createElement("div");
+            div.className = "progress-bar item-rarity-" + (i + startingRarity);
+
+            div.style.transform = Utility.getProgressBarTransformCSS(offset, Math.pow(10, i));
+            containerProgressRarityChance.appendChild(div);
+        }
+    }
 
     function load() {
         let s = localStorage.getItem("_save0_");
@@ -325,6 +382,10 @@ let debug = (function() {
                 }
             }
 
+            if(s.subVersion <= 4) {
+                s.flags.aurasExpanded = true;
+            }
+
             model.modules.zones = new Zones(s.modules.zones);
             model.modules.menu = new Menu(s.modules.menu, document.getElementById("template_menu"), document.getElementById("containerMenus"));
             model.modules.world = new World(s.modules.world);
@@ -342,11 +403,11 @@ let debug = (function() {
             model.modules.world.init();
             
             let type = model.modules.zones.getZoneType(zone);
-            document.getElementById("textZoneType").innerHTML = type === Zones.MAIN ? "Main Zone" : type === Zones.QUEST ? "Quest Zone" : "Limbo";
+            document.getElementById("textZoneType").innerHTML = type === Zone.MAIN ? "Main Zone" : type === Zone.QUEST ? "Quest Zone" : "Limbo";
             document.getElementById("textZoneType").innerHTML += zone.ended ? " (Finished)" : "";
         });
 
-        let zone = model.modules.zones.zones[Zones.MAIN];
+        let zone = model.modules.zones.zones[Zone.MAIN];
 
         zone.modules.player.on("itemsChanged", function (player, items, allItems) {
             try {
@@ -528,32 +589,16 @@ let debug = (function() {
             model.modules.menu.create(Math.floor(window.innerWidth / 2 - window.innerWidth * 0.1), Math.floor(window.innerHeight / 2 - window.innerWidth * 0.05), "20vw", "10vw", "Item Rerolled", description);
         });
 
-        zone.modules.battle.on("nextWaveStarted", (wave, subWave, maxSubWave, highestWave, highestWaveSubWave, maxSubWaveCurrentZone, targetWave) => {
+        zone.modules.battle.on("nextWaveStarted", (zone, wave, subWave, maxSubWave, highestWave, highestWaveSubWave, maxSubWaveCurrentWave, targetWave) => {
             try {
                 document.getElementById("textTargetWave").innerHTML = targetWave == null ? "None" : targetWave;
 
                 document.getElementById("textBattleWave").innerHTML = "Wave " + wave;
                 document.getElementById("progressBattleWave").style.transform = Utility.getProgressBarTransformCSS(subWave, maxSubWave);
                 document.getElementById("textBattleHighestWave").innerHTML = highestWave + "." + highestWaveSubWave;
-                document.getElementById("progressBattleMaxSubWaveCurrentZone").style.transform = Utility.getProgressBarTransformCSS(maxSubWaveCurrentZone, maxSubWave);
+                document.getElementById("progressBattlemaxSubWaveCurrentWave").style.transform = Utility.getProgressBarTransformCSS(maxSubWaveCurrentWave, maxSubWave);
 
-                let containerProgressRarityChance = document.getElementById("containerProgressRarityChance");
-
-                let offset = Item.getRarityRollOffset(wave);
-
-                containerProgressRarityChance.innerHTML = "";
-
-                let startingRarity = Item.getRarityRollStartingRarity(wave);
-
-                for(let i = 0; i < 5; i++) {
-                    //TODO merge with item.js func maybe
-                    let div = document.createElement("div");
-                    div.className = "progress-bar item-rarity-" + (i + startingRarity);
-
-                    div.style.transform = Utility.getProgressBarTransformCSS(offset, Math.pow(10, i));
-                    containerProgressRarityChance.appendChild(div);
-                }
-                
+                refreshRarityChance(wave, zone.modules.auras);
 
             } catch(e) {console.error(e);}
         });
@@ -669,11 +714,52 @@ let debug = (function() {
             } catch(e) {console.error(e);}
         });
 
+        zone.modules.auras.on("aurasChanged", function(zone, arrayChanged) {
+            try {
+                let containerAuras = document.getElementById("containerAuras");
+                let aurasArr = zone.modules.auras.auras;
+
+                if(arrayChanged) {
+                    containerAuras.innerHTML = "";
+
+                    let l = aurasArr.length;
+                    for(let i = 0; i < l; i++) {
+                        let fragment = document.getElementById("template_aura").content.cloneNode(true);
+                        let elem = Array.prototype.slice.call(fragment.childNodes, 0)[1];
+
+                        let icon = "";
+                        switch(aurasArr[i].id) {
+                        case 1:
+                            icon = "RR";
+                            break;
+                        default:
+                            icon = "--";
+                            break;
+                        }
+                        elem.querySelector("[data-id=icon]").innerHTML = icon;
+                        elem.querySelector("[data-id=multiplier]").innerHTML = Utility.prettify((aurasArr[i].data * 100)) + "%";
+                        elem.querySelector("[data-id=timer]").innerHTML = Utility.getFormattedTime(aurasArr[i].timeLeft);
+
+                        containerAuras.appendChild(elem);
+                    }
+                    refreshRarityChance(zone.modules.battle.wave, zone.modules.auras);
+                }
+                else {
+                    let elems = containerAuras.children;
+
+                    let l = aurasArr.length;
+                    for(let i = 0; i < l; i++) {
+                        elems[i].querySelector("[data-id=timer]").innerHTML = Utility.getFormattedTime(aurasArr[i].timeLeft);
+                    }
+                }
+            } catch(e) {console.error(e);}
+        });
+
         model.modules.world.on("timeUpdated", (minCol, maxCol, hours, minutes) => {
             let type = model.modules.zones.getZoneType(model.modules.zones.getFocusedZone());
-            if(type === Zones.MAIN)
+            if(type === Zone.MAIN)
                 document.getElementById("containerWorld").style.backgroundColor = "rgb(" + minCol + "," + maxCol + "," + minCol + ")";
-            else if(type === Zones.QUEST)
+            else if(type === Zone.QUEST)
                 document.getElementById("containerWorld").style.backgroundColor = "rgb(" + maxCol + "," + maxCol + "," + minCol + ")";
             else
                 document.getElementById("containerWorld").style.backgroundColor = "rgb(" + 255 + "," + 255 + "," + 255 + ")";
@@ -692,9 +778,6 @@ let debug = (function() {
     let frameClock = 0;
     let lastTimestamp = 0;
     let animationFrame = null;
-
-    offlineLoop();
-    window.requestAnimationFrame(coreLoop);
 
     function offlineLoop() {
         let now = Date.now();
@@ -778,6 +861,22 @@ let debug = (function() {
 
         if(init) {
             document.getElementById("checkboxLowPerformance").checked = checked;
+        }
+    }
+
+    function onAurasExpandedClicked(expanded, init) {
+        let containerAuras = document.getElementById("containerAuras");
+        let buttonHideExpandAurasArrow = document.getElementById("buttonHideExpandAuras").querySelector(".arrow");
+
+        if(expanded) {
+            containerAuras.style.width = "";
+            buttonHideExpandAurasArrow.classList.remove("arrow-right");
+            buttonHideExpandAurasArrow.classList.add("arrow-left");
+        }
+        else {
+            containerAuras.style.width = "0";
+            buttonHideExpandAurasArrow.classList.remove("arrow-left");
+            buttonHideExpandAurasArrow.classList.add("arrow-right");
         }
     }
 

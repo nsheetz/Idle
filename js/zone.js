@@ -13,6 +13,7 @@ const Zone = ((window, document) => {
             this.modules = {
                 player : new Player(init.modules.player, this),
                 battle : new Battle(init.modules.battle, this),
+                auras : new Auras(init.modules.auras, this)
             }
             
             this.sZones = Symbol();
@@ -26,8 +27,10 @@ const Zone = ((window, document) => {
         }
 
         update(frameTime) {
-            if(!this.ended)
+            if(!this.ended) {
+                this.modules.auras.update(frameTime);
                 this.modules.battle.update(frameTime, this.modules.player);
+            }
         }
 
         end() {
@@ -36,6 +39,10 @@ const Zone = ((window, document) => {
             this[this.sZones].zoneEnded(this);
         }
     }
+
+    Zone.MAIN = 0;
+    Zone.QUEST = 1;
+    
     return Zone;
 })(null, null);
 

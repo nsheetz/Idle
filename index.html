@@ -67,13 +67,40 @@
 		</div>
 	</template>
 
-	<link rel="stylesheet" href="css/style.css?v=27">
+    <template id="template_aura">
+        <div style="display:flex;flex-flow:row nowrap">
+            <div data-id="icon" style="flex:0 0 1.5vw"></div>
+            <div data-id="multiplier" style="flex: 0 0 2.5vw"></div>
+            <div data-id="timer" style="flex: 1 0 auto"></div>
+        </div>
+    </template>
+    
+    <script src="libs/EventEmitter.min.js?v=1"></script>
+
+    <link rel="stylesheet" href="css/style.css?v=28">
+
+    <script                 src="js/console.js?v=28"></script>
+    <script                 src="js/utility.js?v=28"></script>
+
+    <script                    src="js/item.js?v=28"></script>
+    <script                    src="js/aura.js?v=28"></script>
+    <script                  src="js/player.js?v=28"></script>
+    <script                   src="js/enemy.js?v=28"></script>
+    <script                  src="js/battle.js?v=28"></script>
+    <script                   src="js/auras.js?v=28"></script>
+    <script                    src="js/zone.js?v=28"></script>
+    <script                   src="js/zones.js?v=28"></script>
+    <script                   src="js/world.js?v=28"></script>
+    <script                src="js/floateys.js?v=28"></script>
+    <script                    src="js/menu.js?v=28"></script>
+
+	<script                    src="js/main.js?v=28"></script>
 </head>
 
 <body class="body-performance-high text-outline" style="display:flex">
     <div id="containerMenus"></div>
 
-    <div id="containerFooter">V0.6.4<br>expect your save to be deleted<br>made by @Grabz#4707</div>
+    <div id="containerFooter">V0.7.0<br>expect your save to be deleted<br>made by @Grabz#4707</div>
     <div id="containerPanelLeft">
         <div style="float:left">Total Time:</div> <div style="float:right" id="textTimer"></div><br>
         <div style="float:left">Run Time:</div> <div style="float:right" id="textTimerRun"></div><br>
@@ -82,7 +109,7 @@
         <div class="progress-bar-outer">
             <div id="textBattleWave" class="progress-bar-text"></div>
             <div id="progressBattleWave" class="progress-bar"></div>
-            <div id="progressBattleMaxSubWaveCurrentZone" class="progress-bar"></div>
+            <div id="progressBattlemaxSubWaveCurrentWave" class="progress-bar"></div>
         </div>
         <hr>
         <div>Drop rarity chance: </div>
@@ -123,6 +150,11 @@
             <button id="buttonZoneTypeSwitchRight" style="flex: 0 0 3vw"><div class="arrow arrow-right"></div></button>
         </div>
         <div id="containerWorld">
+            <div style="display:flex;flex-flow:row nowrap">
+                <div id="containerAuras" style="float:left"></div>
+                <button id="buttonHideExpandAuras" style="position:relative;height:2vw;width:1.3vw;z-index:1;"><div class="arrow arrow-left" style="margin-left:0.25vw;margin-right:0.25vw"></div></button>        
+            </div>
+            
             <div id="textCurrentTime"></div>
             <div id="containerFloateys"></div>
             <div id="containerBattleEnemy"></div>
@@ -174,22 +206,5 @@
             <input type="checkbox" id="checkboxEnableDamageNumbers">Damage Numbers</input><br>
         </div>
     </div>
-	
-	<script src="libs/EventEmitter.min.js?v=1"></script>
-
-    <script  src="js/console.js?v=27"></script>
-    <script  src="js/utility.js?v=27"></script>
-
-    <script     src="js/item.js?v=27"></script>
-    <script   src="js/player.js?v=27"></script>
-    <script    src="js/enemy.js?v=27"></script>
-    <script   src="js/battle.js?v=27"></script>
-    <script     src="js/zone.js?v=27"></script>
-    <script    src="js/zones.js?v=27"></script>
-    <script    src="js/world.js?v=27"></script>
-    <script src="js/floateys.js?v=27"></script>
-    <script     src="js/menu.js?v=27"></script>
-
-	<script     src="js/main.js?v=27"></script>
 </body>
 </html>

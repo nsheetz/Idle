@@ -10,6 +10,9 @@ const Utility = Object.freeze({
         return Math.floor(Math.random() * (maxExcl - minIncl) + minIncl);
     },
     getFormattedTime : function(ms) {
+        if(ms === Infinity)
+            return ms;
+
         let d, h, m, s;
 
         s = Math.floor(ms / 1000);

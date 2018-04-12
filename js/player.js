@@ -466,6 +466,10 @@ const Player = ((window, document) => {
         getCurrentMaxXP() {
             return this.level * 1000;
         }
+
+        static getGoldCostOfQuestRarityChanceAuraMultiplier(targetZone, mult) {
+            return 200000 * Math.pow(10, targetZone / 10) * (mult - 1);
+        }
     }
 
     Player.INVENTORY = 0;

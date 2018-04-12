@@ -12,7 +12,7 @@ const Battle = ((window, document) => {
             this.maxSubWave = init.maxSubWave || 20;
             this.highestWave = init.highestWave || 0;
             this.highestWaveSubWave = init.highestWaveSubWave || 0;
-            this.maxSubWaveCurrentZone = init.maxSubWaveCurrentZone || 20;
+            this.maxSubWaveCurrentWave = init.maxSubWaveCurrentWave || 20;
             this.timestampTimeElapsedInRun = init.timestampTimeElapsedInRun || 0;
             
             this.enemies = init.enemies || [];
@@ -27,7 +27,7 @@ const Battle = ((window, document) => {
         init() {
             this.emit("enemiesRemoved");
             this.emit("enemiesAdded", this.enemies);
-            this.emit("nextWaveStarted", this.wave, this.subWave, this.maxSubWave, this.highestWave, this.highestWaveSubWave, this.maxSubWaveCurrentZone, this[this.sZone].targetWave);
+            this.emit("nextWaveStarted", this[this.sZone], this.wave, this.subWave, this.maxSubWave, this.highestWave, this.highestWaveSubWave, this.maxSubWaveCurrentWave, this[this.sZone].targetWave);
         }
 
         
@@ -40,7 +40,7 @@ const Battle = ((window, document) => {
     
             this.wave = 1;
             this.subWave = 0;
-            this.maxSubWaveCurrentZone = Battle.getMaxSubWave(this.wave, this.maxSubWave, this.highestWave);
+            this.maxSubWaveCurrentWave = Battle.getMaxSubWave(this.wave, this.maxSubWave, this.highestWave);
             this.nextWave();
         }
     
@@ -48,19 +48,19 @@ const Battle = ((window, document) => {
             if(this[this.sZone].ended)
                 return false;
                 
-            if(this.subWave < this.maxSubWaveCurrentZone)
+            if(this.subWave < this.maxSubWaveCurrentWave)
                 this.subWave++;
             else {
                 this.subWave = 0;
                 this.wave += 1;
 
-                this.maxSubWaveCurrentZone = Battle.getMaxSubWave(this.wave, this.maxSubWave, this.highestWave);
+                this.maxSubWaveCurrentWave = Battle.getMaxSubWave(this.wave, this.maxSubWave, this.highestWave);
             }
     
             this.emit("enemiesRemoved");
             this.enemies.splice(0, this.enemies.length);
 
-            this.emit("nextWaveStarted", this.wave, this.subWave, this.maxSubWave, this.highestWave, this.highestWaveSubWave, this.maxSubWaveCurrentZone, this[this.sZone].targetWave);
+            this.emit("nextWaveStarted", this[this.sZone], this.wave, this.subWave, this.maxSubWave, this.highestWave, this.highestWaveSubWave, this.maxSubWaveCurrentWave, this[this.sZone].targetWave);
 
             let zone = this[this.sZone];
             if(zone.targetWave != null && this.wave >= zone.targetWave) {
@@ -182,8 +182,14 @@ const Battle = ((window, document) => {
                                     il--;
                                     this.emit("enemiesRemoved", [enemy]);
 
+                                    let offsetOffset = zone.modules.auras.getAllMultipliersOfActiveAuras(Aura.RARITY_CHANCE_INCREASED);
+                                    if(offsetOffset.length > 0)
+                                        offsetOffset = offsetOffset.reduce((a, b) => a + b) * 10;
+                                    else
+                                        offsetOffset = 0;
+                                    
                                     player.xp += Math.ceil(this.wave / 10);
-                                    player.addItem(new Item().generateRandom(zoneType, this.wave));
+                                    player.addItem(new Item().generateRandom(zoneType, this.wave, null, null, offsetOffset));
 
                                     player.updateStats();
                     
@@ -283,6 +289,10 @@ const Battle = ((window, document) => {
         static getEnemyStatCeiling(wave, statCount) {
             //initial offset   +  rarity offset           +  level offset
             return (25 * 3 * statCount) + Math.ceil((wave / 10) * 25 * statCount) + (wave * statCount);
+        }
+
+        getQuestMaxLevel() {
+            return Math.floor(this.highestWave / 10) * 10;
         }
     }
 })(null, null);

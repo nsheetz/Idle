@@ -1,3 +1,9 @@
+2018-04-12 - V0.7.0
+* Added Auras.
+* You can now purchase a Rarity Chance aura with gold when starting a Quest to make it easier.
+* Beating a Quest Zone will now grant a Rarity Chance aura for the Main Zone.
+* Plenty other things I probably forgot.
+
 2018-04-11 - V0.6.4
 * Edge compatibility.
 

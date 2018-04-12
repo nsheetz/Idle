@@ -144,6 +144,16 @@ canvas {
     flex:1 1 auto;
 }
 
+#containerAuras {
+    font-size:0.9vw;
+    position:relative;
+    left:0;
+    top:0;
+    width:8vw;
+    height:10vw;
+    overflow-y:auto;
+}
+
 #textCurrentTime {
     position:absolute;
     top:3px;
@@ -263,7 +273,7 @@ hr,
 }
 
 #containerProgressRarityChance .progress-bar,
-#progressBattleMaxSubWaveCurrentZone.progress-bar {
+#progressBattlemaxSubWaveCurrentWave.progress-bar {
     border-right: 2px dotted var(--ui-color-border);
 }
 
@@ -678,7 +688,7 @@ button,
     cursor: pointer;
 }
 
-#progressBattleMaxSubWaveCurrentZone.progress-bar {
+#progressBattlemaxSubWaveCurrentWave.progress-bar {
     background-color: transparent;
 }
 

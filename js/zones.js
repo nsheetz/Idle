@@ -12,10 +12,10 @@ const Zones = ((window, document) => {
             init.zones = init.zones || [];
             this.zones = [];
 
-            this.zones[Zones.MAIN] = new Zone(init.zones[Zones.MAIN] || {}, this);
+            this.zones[Zone.MAIN] = new Zone(init.zones[Zone.MAIN] || {}, this);
 
-            if(init.zones[Zones.QUEST] != null) {
-                this.zones[Zones.QUEST] = new Zone(init.zones[Zones.QUEST], this);
+            if(init.zones[Zone.QUEST] != null) {
+                this.zones[Zone.QUEST] = new Zone(init.zones[Zone.QUEST], this);
             }
         }
 
@@ -23,9 +23,9 @@ const Zones = ((window, document) => {
             this.emit("focusedZoneChanged", this.zones[this.focusedZoneIndex]);
             this.zones[this.focusedZoneIndex].init();
 
-            if(this.zones[Zones.QUEST] != null) {
-                for(let name in this.zones[Zones.QUEST].modules) {
-                    this.zones[Zones.QUEST].modules[name]._events = this.zones[Zones.MAIN].modules[name]._events;
+            if(this.zones[Zone.QUEST] != null) {
+                for(let name in this.zones[Zone.QUEST].modules) {
+                    this.zones[Zone.QUEST].modules[name]._events = this.zones[Zone.MAIN].modules[name]._events;
                 }
             }
 
@@ -49,13 +49,13 @@ const Zones = ((window, document) => {
         }
 
         createNewQuest(targetWave, rewardItemRarity) {
-            this.zones[Zones.QUEST] = new Zone({
+            this.zones[Zone.QUEST] = new Zone({
                 targetWave: targetWave,
                 rewardItemRarity: rewardItemRarity,
             }, this);
 
-            for(let name in this.zones[Zones.QUEST].modules) {
-                this.zones[Zones.QUEST].modules[name]._events = this.zones[Zones.MAIN].modules[name]._events;
+            for(let name in this.zones[Zone.QUEST].modules) {
+                this.zones[Zone.QUEST].modules[name]._events = this.zones[Zone.MAIN].modules[name]._events;
             }
         }
 
@@ -110,8 +110,9 @@ const Zones = ((window, document) => {
                 return false;
             }
 
-            this.zones[Zones.MAIN].modules.player.addItem(new Item().generateRandom(Zones.MAIN, null, zone.rewardItemRarity));
-            this.zones[Zones.MAIN].modules.player.addItem(new Item().generateRandom(Zones.MAIN, null, zone.rewardItemRarity));
+            this.zones[Zone.MAIN].modules.player.addItem(new Item().generateRandom(Zone.MAIN, null, zone.rewardItemRarity));
+            this.zones[Zone.MAIN].modules.player.addItem(new Item().generateRandom(Zone.MAIN, null, zone.rewardItemRarity));
+            this.zones[Zone.MAIN].modules.auras.addAura(Aura.RARITY_CHANCE_INCREASED, 1000*60*60*(zone.targetWave/10), 0.1);
             
             return this.changeFocusedZone(0);
         }
@@ -138,9 +139,6 @@ const Zones = ((window, document) => {
             }
         }
     }
-
-    Zones.MAIN = 0;
-    Zones.QUEST = 1;
 
     return Zones;
 })(null, null);

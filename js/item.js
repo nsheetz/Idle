@@ -34,10 +34,22 @@ const Item = ((window, document) => {
             this._battleClockRegenSpeed = init._battleClockRegenSpeed || 0;
             this._battleClockRegenSpeedFinish = init._battleClockRegenSpeedFinish || 0;
         }
-    
-        generateRandom(zoneType, wave, rarity, type) {
+        
+        /**
+         * Fill this item with random values.
+         *
+         * @param {Number} zoneType Type of this zone. Zone.MAIN or Zone.QUEST.
+         * @param {Number} wave Only used if rarity is not specified. Current wave.
+         * @param {Number} rarity Override the random rarity generation with this rarity.
+         * @param {Number} type Type of this item. Item.WEAPON or Item.ARMOR.
+         * @param {Number} offsetOffset The offset to add to the % chance for rarity generation. 1 equals 10%.
+         * @returns {Item} self 
+         */
+        generateRandom(zoneType, wave, rarity, type, offsetOffset) {
+            offsetOffset = offsetOffset || 0;
+
             if(rarity == null) {
-                this.rarity = Item.getRarityRoll(wave);
+                this.rarity = Item.getRarityRoll(wave, offsetOffset);
             }
             else {
                 this.rarity = rarity;
@@ -82,17 +94,19 @@ const Item = ((window, document) => {
             return Math.ceil(wave/10) - 1;
         }
 
-        static getRarityRollOffset(wave) {
-            wave = wave - (Item.getRarityRollStartingRarity(wave) * 10);
-            return Math.pow(10, wave/10);
+        static getRarityRollOffset(wave, offsetOffset) {
+            offsetOffset = offsetOffset || 0;
+
+            wave = wave - (Item.getRarityRollStartingRarity(wave) * 10)
+            return Math.pow(10, wave/10) + offsetOffset;
         }
         
-        static getRarityRoll(wave) {
+        static getRarityRoll(wave, offsetOffset) {
             wave = wave || 1;
 
             let startingRarity = Item.getRarityRollStartingRarity(wave);
 
-            let offset = Item.getRarityRollOffset(wave);
+            let offset = Item.getRarityRollOffset(wave, offsetOffset);
 
             let rarity = startingRarity;
             if     (Utility.getRandomInt(0, 1000000) <= offset) rarity = startingRarity + 6;
@@ -105,31 +119,31 @@ const Item = ((window, document) => {
         }
 
         getStatRoll(max, zoneType) {
-            return Item.getRoll(0, 5 * (this.rarity + 1), 0.9, zoneType === Zones.QUEST ? 2 : 4, 0.1, 1, max)
+            return Item.getRoll(0, 5 * (this.rarity + 1), 0.9, zoneType === Zone.QUEST ? 2 : 4, 0.1, 1, max)
         }
 
         getDamageRoll(max, zoneType) {
-            return Item.getRoll(2, 10, 0.8, zoneType === Zones.QUEST ? 25 : 50, 0.2, this.rarity + 1, max);
+            return Item.getRoll(2, 10, 0.8, zoneType === Zone.QUEST ? 25 : 50, 0.2, this.rarity + 1, max);
         }
 
         getHealthRoll(max, zoneType) {
-            return Item.getRoll(20, 100, 0.8, zoneType === Zones.QUEST ? 25 : 50, 0.2, this.rarity + 1, max);
+            return Item.getRoll(20, 100, 0.8, zoneType === Zone.QUEST ? 25 : 50, 0.2, this.rarity + 1, max);
         }
 
         getRegenRoll(max, zoneType) {
-            return Item.getRoll(10, 30, 0.8, zoneType === Zones.QUEST ? 25 : 50, 0.2, this.rarity + 1, max) / 10;
+            return Item.getRoll(10, 30, 0.8, zoneType === Zone.QUEST ? 25 : 50, 0.2, this.rarity + 1, max) / 10;
         }
 
         getDamageSpeedRoll(max, zoneType) {
-            return Item.getRoll(2, 20, 0.8, zoneType === Zones.QUEST ? 25 : 50, 0.2, 1, max) / 10;
+            return Item.getRoll(2, 20, 0.8, zoneType === Zone.QUEST ? 25 : 50, 0.2, 1, max) / 10;
         }
 
         getRegenSpeedRoll(max, zoneType) {
-            return Item.getRoll(1, 30, 0.8, zoneType === Zones.QUEST ? 25 : 50, 0.2, 1, max) / 100;
+            return Item.getRoll(1, 30, 0.8, zoneType === Zone.QUEST ? 25 : 50, 0.2, 1, max) / 100;
         }
 
         getReachRoll(max, zoneType) {
-            return Item.getRoll(0, this.rarity + 1, 0.8, zoneType === Zones.QUEST ? 25 : 50, 0.2, 1, max);
+            return Item.getRoll(0, this.rarity + 1, 0.8, zoneType === Zone.QUEST ? 25 : 50, 0.2, 1, max);
         }
 
 

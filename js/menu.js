@@ -21,7 +21,7 @@ const Menu = ((window, document) => {
             this.update();
         }
 
-        createVillage(date, imageVillage, imageVillageLightmap, windowWidth, windowHeight, questCb) {
+        createVillage(player, battle, date, imageVillage, imageVillageLightmap, windowWidth, windowHeight, questCb) {
             let scaleX = Math.floor(windowWidth * 0.9 / 300);
             let scaleY = Math.floor(windowHeight * 0.9 / 188);
             let scale = Math.min(scaleX, scaleY);
@@ -100,8 +100,17 @@ const Menu = ((window, document) => {
 
                 description += "I'm going to cut straight to the chase. See, this whole place is still kinda WIP and stuff, so I'm going to spare you any story and whatnot for now.<br><br>";
                 description += "What you need to know is that here is where you go on Quests!<br><br>";
-                description += "Once you go on a Quest, you can switch between the Quest area and the Main area with arrows above the battle screen. You will fight in both, simultaneously! Because of training...<br><br>";
-                description += "<button data-id=startQuest>Go on Quest</button>";
+
+                let maxLevel = battle.getQuestMaxLevel();
+                if(maxLevel < 1) {
+                    description += "Unfortunately, you are not strong enough yet to go on Quests! Come back when you reach Wave 10.";
+                }
+                else {
+                    description += "Once you go on a Quest, you can switch between the Quest area and the Main area with arrows above the battle screen. You will fight in both, simultaneously! Because of training...<br><br>";
+                    description += "Increase the multiplier below to select a Rarity Chance aura to apply to the Quest (between 1 and 2), for a sum of Gold.<br>"
+                    description += "<input type='number' min='1' max='2' value='1' step='0.01'></input><br>";
+                    description += "<button data-id=startQuest>Go on Quest <span class='icon-gold' data-id='gold'></span></button><br>";
+                }
 
                 let menu = {
                     title: "Town Hall",
@@ -118,10 +127,37 @@ const Menu = ((window, document) => {
 
                 let elem = this.setup(menus.length - 1);
 
-                elem.querySelector("[data-id=startQuest]").onclick = () => {
-                    this.remove(menu);
+                if(!(maxLevel < 1)) {
+                    let elemGold = elem.querySelector("[data-id=gold]");
+                    let input = elem.querySelector("input");
+                    let buttonStartQuest = elem.querySelector("[data-id=startQuest]");
 
-                    questCb();
+                    let cost = 0;
+                    input.oninput = function() {
+                        if(this.value < 1) {
+                            this.value = 1;
+                        }
+                        else if(this.value > 2) {
+                            this.value = 2;
+                        }
+                        cost = Player.getGoldCostOfQuestRarityChanceAuraMultiplier(battle.getQuestMaxLevel(), this.value);
+                        
+                        elemGold.innerHTML = Utility.prettify(cost);
+
+                        if(player.gold < cost)
+                            buttonStartQuest.disabled = true;
+                        else
+                            buttonStartQuest.disabled = false;
+                        
+                    }
+
+                    input.oninput();
+
+                    buttonStartQuest.onclick = () => {
+                        this.remove(menu);
+
+                        questCb(input.value, cost);
+                    }
                 }
             }
         }
