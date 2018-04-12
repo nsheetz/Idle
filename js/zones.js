@@ -114,6 +114,8 @@ const Zones = ((window, document) => {
             this.zones[Zone.MAIN].modules.player.addItem(new Item().generateRandom(Zone.MAIN, null, zone.rewardItemRarity));
             this.zones[Zone.MAIN].modules.auras.addAura(Aura.RARITY_CHANCE_INCREASED, 1000*60*60*(zone.targetWave/10), 0.1);
             
+            this.emit("zoneEnded", zone);
+            
             return this.changeFocusedZone(0);
         }
 
