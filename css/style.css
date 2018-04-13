@@ -574,6 +574,18 @@ button,
     color: #44bb44
 }
 
+.c-str {
+    color: rgb(230, 30, 30);
+}
+
+.c-def {
+    color: rgb(0, 170, 200);
+}
+
+.c-agi {
+    color: rgb(0, 200, 0);
+}
+
 .bg-green {
     background-color: #44bb44
 }

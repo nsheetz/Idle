@@ -383,8 +383,6 @@ let debug = (function() {
                     case "textHealth":
                         elem.innerHTML = Utility.prettify(Math.ceil(enemy.health * 10)/10) + "/" + Utility.prettify(enemy.maxHealth);
                         break;
-                    case "textStatCap":
-                        elem.innerHTML = Utility.prettify(Battle.getEnemyStatCeiling(zone.modules.battle.wave, Object.keys(enemy.stats).length));
                     }
     
                     for(let name in enemy.stats) {
@@ -708,8 +706,9 @@ let debug = (function() {
                         let enemy = containerBattleEnemy.querySelector("#enemy" + enemies[i].id)
                         if(enemy != null) {
                             enemy.id = "enemyRemoved";
+                            enemy.style.opacity = "0.4";
 
-                            setTimeout(() => containerBattleEnemy.removeChild(enemy), 1000);
+                            setTimeout(() => {containerBattleEnemy.removeChild(enemy)}, 1000);
                         }
                     }
                 }
@@ -724,7 +723,8 @@ let debug = (function() {
                     let enemy = enemies[i];
                     let fragment = document.getElementById("template_enemy").content.cloneNode(true);
 
-                    let containerProgress = fragment.querySelector("[data-id=containerProgress]");
+                    let containerStats = fragment.querySelector("[data-id=containerStats]");
+                    let containerStatsNumbers = fragment.querySelector("[data-id=containerStatsNumbers]");
                     
                     for(let name in enemy.stats) {
                         let div = document.createElement("div");
@@ -735,7 +735,8 @@ let debug = (function() {
                         div.style.marginTop = "-1px";
                         div.dataset.id = "progress" + name;
 
-                        containerProgress.appendChild(div);
+                        containerStats.appendChild(div);
+                        containerStatsNumbers.innerHTML += "<span class=c-" + name + "> " + enemy.stats[name] + "</span>";
                     }
                                     
                     

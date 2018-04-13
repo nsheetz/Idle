@@ -1,3 +1,9 @@
+2018-04-13 - V0.8.1
+* Changed the look of enemy stat bars.
+* Removed stat cap, added individual enemy stats.
+* Defeated enemies are now less opaque.
+* Enemies should now spawn better spaced out as to not overlap each other.
+
 2018-04-13 - V0.8.0
 * Reworked weights system (thanks nsheetz!).
 * Increased the amount of enemies per wave to 2-8 (+1 every 10 zones) from 1-5 (+1 every 10 zones)

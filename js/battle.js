@@ -72,6 +72,14 @@ const Battle = ((window, document) => {
             let randomOffset = Math.ceil(this.wave / 10);
             let random = Utility.getRandomInt(1 + randomOffset, 7 + randomOffset);
 
+            let maxX = 80;
+            let maxY = 70;
+
+            let coordinates = [];
+            for(let i = 0; i <= maxX; i+=20)
+                for(let j = 0; j <= maxY; j+=10)
+                    coordinates.push([i, j]);
+
             for(let i = 0; i < random; i++) {
                 let hp = Math.floor(Math.triangular((this.wave) / 10) * 100);
                 let damage = (Math.triangular((this.wave) / 10) * 10);
@@ -80,12 +88,31 @@ const Battle = ((window, document) => {
                 damage = damage * damageSpeed;
 
                 hp = Math.ceil(Utility.getRandomInt(hp / 2, hp * 2));
-                
+
+                let screenX = 0;
+                if(coordinates.length > 0) {
+                    let index = Utility.getRandomInt(0, coordinates.length);
+                    let coords = coordinates[index];
+                    coordinates.splice(index, 1);
+
+                    screenX = coords[0] + Utility.getRandomInt(0, 7) - 3;
+                    screenY = coords[1] + Utility.getRandomInt(0, 7) - 3;
+
+                    if(screenX < 0) screenX = 0;
+                    if(screenX > maxX) screenX = maxX;
+                    if(screenY < 0) screenY = 0;
+                    if(screenY > maxY) screenY = maxY;
+                }
+                else {
+                    screenX = Utility.getRandomInt(0, maxX+1);
+                    screenY = Utility.getRandomInt(0, maxY+1);
+                }
+
                 let enemy = new Enemy({
                     id: i,
         
-                    screenX:Utility.getRandomInt(20, 81),
-                    screenY:Utility.getRandomInt(10, 61),
+                    screenX:screenX,
+                    screenY:screenY,
         
                     health:hp,
                     maxHealth:hp,
