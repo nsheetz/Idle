@@ -1,5 +1,6 @@
 2018-04-13 - V0.8.0
 * Reworked weights system (thanks nsheetz!).
+* Increased the amount of enemies per wave to 2-8 (+1 every 10 zones) from 1-5 (+1 every 10 zones)
 
 2018-04-13 - V0.7.2
 * Fixed font crash.
