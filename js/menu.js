@@ -21,7 +21,7 @@ const Menu = ((window, document) => {
             this.update();
         }
 
-        createVillage(player, battle, date, imageVillage, imageVillageLightmap, windowWidth, windowHeight, questCb) {
+        createVillage(village, player, battle, date, imageVillage, imageVillageLightmap, windowWidth, windowHeight, questCb) {
             let scaleX = Math.floor(windowWidth * 0.9 / 300);
             let scaleY = Math.floor(windowHeight * 0.9 / 188);
             let scale = Math.min(scaleX, scaleY);
@@ -96,19 +96,20 @@ const Menu = ((window, document) => {
             let elem = this.setup(menus.length - 1);
 
             elem.querySelector("[data-id=townHall]").onclick = () => {
-                let description = "Greetings, you there!<br><br> I'm the Mayor.";
+                let description = "Greetings, you there! I'm the Mayor.<br><br>";
 
-                description += "I'm going to cut straight to the chase. See, this whole place is still kinda WIP and stuff, so I'm going to spare you any story and whatnot for now.<br><br>";
-                description += "What you need to know is that here is where you go on Quests!<br><br>";
+                description += "I have new Quests for you!<br>";
 
                 let maxLevel = battle.getQuestMaxLevel();
                 if(maxLevel < 1) {
                     description += "Unfortunately, you are not strong enough yet to go on Quests! Come back when you reach Wave 10.";
                 }
                 else {
-                    description += "Once you go on a Quest, you can switch between the Quest area and the Main area with arrows above the battle screen. You will fight in both, simultaneously! Because of training...<br><br>";
-                    description += "Increase the multiplier below to select a Rarity Chance aura to apply to the Quest (between 1 and 2), for a sum of Gold.<br>"
-                    description += "<input type='number' min='1' max='2' value='1' step='0.01'></input><br>";
+                    description += "You have <span data-id=aurasRemaining></span> Auras left to get from Quests.<br>";
+                    description += "New Auras available in <span data-id=newQuestsCountdown></span><br><br>";
+                    description += "Select the strength of the Rarity Chance aura to apply to the Quest,<br>for a sum of <span class=icon-gold></span><br>";
+                    description += "<input type='range' min='1' max='2' value='1' step='0.01'></input><br>";
+                    description += "<span data-id=inputValue></span><br>";
                     description += "<button data-id=startQuest>Go on Quest <span class='icon-gold' data-id='gold'></span></button><br>";
                 }
 
@@ -120,7 +121,21 @@ const Menu = ((window, document) => {
                     width: "30vw",
                     height: "20vw",
                     clock: 1000*60,
-                    update: () => {},
+                    update: () => {
+                        let textNewQuestsCountdown = elem.querySelector("[data-id=newQuestsCountdown]");
+                        if(textNewQuestsCountdown != null) {
+                            let today = new Date(village.today);
+                            let tomorrow = new Date(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+                            tomorrow = tomorrow.getTime() + (1000*60*60*24);
+
+                            textNewQuestsCountdown.innerHTML = Utility.getFormattedTime(tomorrow - Date.now());
+                        }
+
+                        let aurasRemaining = elem.querySelector("[data-id=aurasRemaining]");
+                        if(aurasRemaining != null) {
+                            aurasRemaining.innerHTML = village.aurasRemaining;
+                        }
+                    },
                 };
 
                 menus.push(menu);
@@ -131,6 +146,7 @@ const Menu = ((window, document) => {
                     let elemGold = elem.querySelector("[data-id=gold]");
                     let input = elem.querySelector("input");
                     let buttonStartQuest = elem.querySelector("[data-id=startQuest]");
+                    let inputValue = elem.querySelector("[data-id=inputValue]");
 
                     let cost = 0;
                     input.oninput = function() {
@@ -140,6 +156,7 @@ const Menu = ((window, document) => {
                         else if(this.value > 2) {
                             this.value = 2;
                         }
+                        inputValue.innerHTML = Math.round((Number(this.value) - 1) * 100) + "%";
                         cost = Player.getGoldCostOfQuestRarityChanceAuraMultiplier(battle.getQuestMaxLevel(), this.value);
                         
                         elemGold.innerHTML = Utility.prettify(cost);
@@ -269,7 +286,7 @@ const Menu = ((window, document) => {
             
             description += "<hr>";
 
-            if(item.type === Item.WEAPON) {
+            if(item.type === Item.Type.WEAPON) {
                 let value = item.damage;
                 buildStat("damage", item.damage, item.getDamageRoll(true), value);
 
@@ -281,7 +298,7 @@ const Menu = ((window, document) => {
 
                 
             }
-            else if(item.type === Item.ARMOR) {
+            else if(item.type === Item.Type.ARMOR) {
                 let value = item.regen;
                 buildStat("regen", item.regen, item.getRegenRoll(true), value);
 
@@ -302,17 +319,17 @@ const Menu = ((window, document) => {
 
             description += "<hr>";
 
-            if(item.type === Item.WEAPON) {
+            if(item.type === Item.Type.WEAPON) {
                 description += '<button data-item-equip=1 class=bg-' + (item._inventory.data === 1 ? "orange" : "green") + ' style="width:100%">' + (item._inventory.data === 1 ? "Remove from left hand" : "Equip in left hand") + '</button>';
                 description += '<button data-item-equip=2 class=bg-' + (item._inventory.data === 2 ? "orange" : "green") + ' style="width:100%">' + (item._inventory.data === 2 ? "Remove from right hand" : "Equip in right hand") + '</button>';
             }
-            else if(item.type === Item.ARMOR) {
+            else if(item.type === Item.Type.ARMOR) {
                 description += '<button data-item-equip=3 class=bg-' + (item._inventory.data === 3 ? "orange" : "green") + ' style="width:100%">' + (item._inventory.data === 3 ? "Remove helmet" : "Equip helmet") + '</button>';
                 description += '<button data-item-equip=4 class=bg-' + (item._inventory.data === 4 ? "orange" : "green") + ' style="width:100%">' + (item._inventory.data === 4 ? "Remove chestplate" : "Equip chestplate") + '</button>';
                 description += '<button data-item-equip=5 class=bg-' + (item._inventory.data === 5 ? "orange" : "green") + ' style="width:100%">' + (item._inventory.data === 5 ? "Remove pants" : "Equip pants") + '</button>';
             }
 
-            description += '<button data-item-backpack=true class=bg-gray style="width:100%">' + (item._inventory.id === Player.BACKPACK ? "Remove from backpack" : "Move to backpack") + '</button>';
+            description += '<button data-item-backpack=true class=bg-gray style="width:100%">' + (item._inventory.id === Player.Inventory.BACKPACK ? "Remove from backpack" : "Move to backpack") + '</button>';
             description += '<button data-item-reroll=true class=bg-gray style="width:100%">Reroll</button>';
             description += '<button data-item-sell=true class=bg-yellow style="width:100%">Sell (<span class="icon-gold"></span>' + Utility.prettify(item.getSaleGoldValue()) + ')</button>';
 

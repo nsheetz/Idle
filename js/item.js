@@ -38,10 +38,10 @@ const Item = ((window, document) => {
         /**
          * Fill this item with random values.
          *
-         * @param {Number} zoneType Type of this zone. Zone.MAIN or Zone.QUEST.
+         * @param {Number} zoneType Type of this zone. Zone.Type.MAIN or Zone.Type.QUEST.
          * @param {Number} wave Only used if rarity is not specified. Current wave.
          * @param {Number} rarity Override the random rarity generation with this rarity.
-         * @param {Number} type Type of this item. Item.WEAPON or Item.ARMOR.
+         * @param {Number} type Type of this item. Item.Type.WEAPON or Item.Type.ARMOR.
          * @param {Number} offsetOffset The offset to add to the % chance for rarity generation. 1 equals 10%.
          * @returns {Item} self 
          */
@@ -60,12 +60,12 @@ const Item = ((window, document) => {
             }
             else {
                 if(Utility.getRandomInt(0, 2) === 0)
-                    this.type = Item.WEAPON;
+                    this.type = Item.Type.WEAPON;
                 else
-                    this.type = Item.ARMOR;
+                    this.type = Item.Type.ARMOR;
             }
 
-            if(this.type === Item.WEAPON) {
+            if(this.type === Item.Type.WEAPON) {
                 this.damage = this.getDamageRoll(false, zoneType);
                 this.damageSpeed = this.getDamageSpeedRoll(false, zoneType);
                 this.reach = this.getReachRoll(false, zoneType);
@@ -74,7 +74,7 @@ const Item = ((window, document) => {
                 this.regen = 0;
                 this.regenSpeed = 0;
             }
-            else if(this.type === Item.ARMOR) {
+            else if(this.type === Item.Type.ARMOR) {
                 this.damage = 0;
                 this.damageSpeed = 0;
                 this.reach = 0;
@@ -119,31 +119,31 @@ const Item = ((window, document) => {
         }
 
         getStatRoll(max, zoneType) {
-            return Item.getRoll(0, 5 * (this.rarity + 1), 0.9, zoneType === Zone.QUEST ? 2 : 4, 0.1, 1, max)
+            return Item.getRoll(0, 5 * (this.rarity + 1), 0.9, zoneType === Zone.Type.QUEST ? 2 : 4, 0.1, 1, max)
         }
 
         getDamageRoll(max, zoneType) {
-            return Item.getRoll(2, 10, 0.8, zoneType === Zone.QUEST ? 25 : 50, 0.2, this.rarity + 1, max);
+            return Item.getRoll(2, 10, 0.8, zoneType === Zone.Type.QUEST ? 25 : 50, 0.2, this.rarity + 1, max);
         }
 
         getHealthRoll(max, zoneType) {
-            return Item.getRoll(20, 100, 0.8, zoneType === Zone.QUEST ? 25 : 50, 0.2, this.rarity + 1, max);
+            return Item.getRoll(20, 100, 0.8, zoneType === Zone.Type.QUEST ? 25 : 50, 0.2, this.rarity + 1, max);
         }
 
         getRegenRoll(max, zoneType) {
-            return Item.getRoll(10, 30, 0.8, zoneType === Zone.QUEST ? 25 : 50, 0.2, this.rarity + 1, max) / 10;
+            return Item.getRoll(10, 30, 0.8, zoneType === Zone.Type.QUEST ? 25 : 50, 0.2, this.rarity + 1, max) / 10;
         }
 
         getDamageSpeedRoll(max, zoneType) {
-            return Item.getRoll(2, 20, 0.8, zoneType === Zone.QUEST ? 25 : 50, 0.2, 1, max) / 10;
+            return Item.getRoll(2, 20, 0.8, zoneType === Zone.Type.QUEST ? 25 : 50, 0.2, 1, max) / 10;
         }
 
         getRegenSpeedRoll(max, zoneType) {
-            return Item.getRoll(1, 30, 0.8, zoneType === Zone.QUEST ? 25 : 50, 0.2, 1, max) / 100;
+            return Item.getRoll(1, 30, 0.8, zoneType === Zone.Type.QUEST ? 25 : 50, 0.2, 1, max) / 100;
         }
 
         getReachRoll(max, zoneType) {
-            return Item.getRoll(0, this.rarity + 1, 0.8, zoneType === Zone.QUEST ? 25 : 50, 0.2, 1, max);
+            return Item.getRoll(0, this.rarity + 1, 0.8, zoneType === Zone.Type.QUEST ? 25 : 50, 0.2, 1, max);
         }
 
 
@@ -180,7 +180,7 @@ const Item = ((window, document) => {
                 maxStats += this.getStatRoll(true);
             }
 
-            if(this.type === Item.WEAPON) {
+            if(this.type === Item.Type.WEAPON) {
                 let w1 = weights.damage;
                 let w2 = weights.damageSpeed;
                 let w3 = weights.reach;
@@ -198,7 +198,7 @@ const Item = ((window, document) => {
 
                 return Math.sqrt((c1*c2*c3)*(c4/m4)) * 10;
             }
-            else if(this.type === Item.ARMOR) {
+            else if(this.type === Item.Type.ARMOR) {
                 let w1 = weights.health;
                 let w2 = weights.regen;
                 let w3 = weights.regenSpeed;
@@ -222,8 +222,12 @@ const Item = ((window, document) => {
         }
     }
 
-    Item.WEAPON = 0;
-    Item.ARMOR = 1;
+    const Type = Object.freeze({
+        WEAPON: 0,
+        ARMOR: 1,
+    });
+
+    Item.Type = Type;
 
     return Item;
 })(null, null);

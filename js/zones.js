@@ -2,7 +2,7 @@ const Zones = ((window, document) => {
     "use strict";
 
     class Zones extends EventEmitter {
-        constructor(init) {
+        constructor(init, village) {
             super();
             
             init = init || {};
@@ -12,20 +12,23 @@ const Zones = ((window, document) => {
             init.zones = init.zones || [];
             this.zones = [];
 
-            this.zones[Zone.MAIN] = new Zone(init.zones[Zone.MAIN] || {}, this);
+            this.zones[Zone.Type.MAIN] = new Zone(init.zones[Zone.Type.MAIN] || {}, this);
 
-            if(init.zones[Zone.QUEST] != null) {
-                this.zones[Zone.QUEST] = new Zone(init.zones[Zone.QUEST], this);
+            if(init.zones[Zone.Type.QUEST] != null) {
+                this.zones[Zone.Type.QUEST] = new Zone(init.zones[Zone.Type.QUEST], this);
             }
+
+            this.sVillage = Symbol();
+            this[this.sVillage] = village;
         }
 
         init() {
             this.emit("focusedZoneChanged", this.zones[this.focusedZoneIndex]);
             this.zones[this.focusedZoneIndex].init();
 
-            if(this.zones[Zone.QUEST] != null) {
-                for(let name in this.zones[Zone.QUEST].modules) {
-                    this.zones[Zone.QUEST].modules[name]._events = this.zones[Zone.MAIN].modules[name]._events;
+            if(this.zones[Zone.Type.QUEST] != null) {
+                for(let name in this.zones[Zone.Type.QUEST].modules) {
+                    this.zones[Zone.Type.QUEST].modules[name]._events = this.zones[Zone.Type.MAIN].modules[name]._events;
                 }
             }
 
@@ -49,13 +52,13 @@ const Zones = ((window, document) => {
         }
 
         createNewQuest(targetWave, rewardItemRarity) {
-            this.zones[Zone.QUEST] = new Zone({
+            this.zones[Zone.Type.QUEST] = new Zone({
                 targetWave: targetWave,
                 rewardItemRarity: rewardItemRarity,
             }, this);
 
-            for(let name in this.zones[Zone.QUEST].modules) {
-                this.zones[Zone.QUEST].modules[name]._events = this.zones[Zone.MAIN].modules[name]._events;
+            for(let name in this.zones[Zone.Type.QUEST].modules) {
+                this.zones[Zone.Type.QUEST].modules[name]._events = this.zones[Zone.Type.MAIN].modules[name]._events;
             }
         }
 
@@ -110,9 +113,17 @@ const Zones = ((window, document) => {
                 return false;
             }
 
-            this.zones[Zone.MAIN].modules.player.addItem(new Item().generateRandom(Zone.MAIN, null, zone.rewardItemRarity));
-            this.zones[Zone.MAIN].modules.player.addItem(new Item().generateRandom(Zone.MAIN, null, zone.rewardItemRarity));
-            this.zones[Zone.MAIN].modules.auras.addAura(Aura.RARITY_CHANCE_INCREASED, 1000*60*60*(zone.targetWave/10), 0.1);
+            if(index === Zone.Type.QUEST) {
+                let village = this[this.sVillage];
+
+                this.zones[Zone.Type.MAIN].modules.player.addItem(new Item().generateRandom(Zone.Type.MAIN, null, zone.rewardItemRarity));
+                this.zones[Zone.Type.MAIN].modules.player.addItem(new Item().generateRandom(Zone.Type.MAIN, null, zone.rewardItemRarity));
+
+                if(village.aurasRemaining > 0) {
+                    village.aurasRemaining--;
+                    this.zones[Zone.Type.MAIN].modules.auras.addAura(Aura.RARITY_CHANCE_INCREASED, 1000*60*60*4, 0.1);
+                }
+            }
             
             this.emit("zoneEnded", zone);
             

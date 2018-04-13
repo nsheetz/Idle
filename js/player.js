@@ -126,7 +126,7 @@ const Player = ((window, document) => {
             }
     
             item._deleted = false;
-            item._inventory.id = Player.INVENTORY;
+            item._inventory.id = Player.Inventory.INVENTORY;
             item._inventory.data = null;
     
             this.inventory.push(item);
@@ -210,15 +210,15 @@ const Player = ((window, document) => {
             if(index == null)
                 return false;
 
-            if(item._inventory.id === Player.BACKPACK) {
-                item._inventory.id = Player.INVENTORY;
+            if(item._inventory.id === Player.Inventory.BACKPACK) {
+                item._inventory.id = Player.Inventory.INVENTORY;
                 item._inventory.data = null;
             }
             else {
                 let l = this.inventory.length;
                 let totalInBackpack = 0;
                 for(let i = 0; i < l; i++) {
-                    if(this.inventory[i]._inventory.id === Player.BACKPACK)
+                    if(this.inventory[i]._inventory.id === Player.Inventory.BACKPACK)
                         totalInBackpack++;
                 }
 
@@ -228,7 +228,7 @@ const Player = ((window, document) => {
                 }
 
                 item._equipped = false;
-                item._inventory.id = Player.BACKPACK;
+                item._inventory.id = Player.Inventory.BACKPACK;
                 item._inventory.data = null;
             }
     
@@ -251,7 +251,7 @@ const Player = ((window, document) => {
             let items = [];
             items.push(item);
 
-            let equipped = this.inventory.find(item => item._inventory.id === Player.EQUIPMENT && item._inventory.data === slot);
+            let equipped = this.inventory.find(item => item._inventory.id === Player.Inventory.EQUIPMENT && item._inventory.data === slot);
             if(equipped != null) {
                 if(equipped._inventory.id === item._inventory.id && equipped._inventory.data === item._inventory.data) {
                     this.unequipItem(item);
@@ -261,7 +261,7 @@ const Player = ((window, document) => {
                 equipped._inventory.id = item._inventory.id;
                 equipped._inventory.data = item._inventory.data;
 
-                if(equipped._inventory.id !== Player.EQUIPMENT) {
+                if(equipped._inventory.id !== Player.Inventory.EQUIPMENT) {
                     equipped._battleClockSpeed = 0;
                     equipped._battleClockRegenSpeed = 0;
                 }
@@ -269,7 +269,7 @@ const Player = ((window, document) => {
                 items.push(equipped);
             }
 
-            item._inventory.id = Player.EQUIPMENT;
+            item._inventory.id = Player.Inventory.EQUIPMENT;
             item._inventory.data = slot;
     
             this.updateStats();
@@ -282,7 +282,7 @@ const Player = ((window, document) => {
             if(index == null)
                 return false;
     
-            item._inventory.id = Player.INVENTORY;
+            item._inventory.id = Player.Inventory.INVENTORY;
             item._inventory.data = null;
 
             item._battleClockSpeed = 0;
@@ -315,7 +315,7 @@ const Player = ((window, document) => {
             for(let i = 0; i < l; i++) {
                 let item = this.inventory[i];
 
-                if(item._inventory.id !== Player.EQUIPMENT)
+                if(item._inventory.id !== Player.Inventory.EQUIPMENT)
                     continue;
     
                 this.damage += item.damage;
@@ -444,15 +444,15 @@ const Player = ((window, document) => {
             let l = this.inventory.length;
             for(let i = 0; i < l; i++) {
                 let item = this.inventory[i];
-                if(item._inventory.id === Player.INVENTORY) {
-                    if(item.type === Item.WEAPON) {
+                if(item._inventory.id === Player.Inventory.INVENTORY) {
+                    if(item.type === Item.Type.WEAPON) {
                         ignoreThresholdWeapon--;
                         if(ignoreThresholdWeapon < 0 && this.sellItem(item)) {
                             i--;
                             l--;
                         }
                     }
-                    else if(item.type === Item.ARMOR) {
+                    else if(item.type === Item.Type.ARMOR) {
                         ignoreThresholdArmor--;
                         if(ignoreThresholdArmor < 0 && this.sellItem(item)) {
                             i--;
@@ -472,9 +472,13 @@ const Player = ((window, document) => {
         }
     }
 
-    Player.INVENTORY = 0;
-    Player.EQUIPMENT = 1;
-    Player.BACKPACK = 2;
+    const Inventory = Object.freeze({
+        INVENTORY: 0,
+        EQUIPMENT: 1,
+        BACKPACK: 2,
+    });
+
+    Player.Inventory = Inventory;
 
     return Player;
 })(null, null);

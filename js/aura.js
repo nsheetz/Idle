@@ -6,6 +6,10 @@ const Aura = ((window, document) => {
             init = init || {};
 
             this.id = init.id || Aura.NONE;
+
+            if(init.timeLeft === null)
+                init.timeLeft = Infinity;
+            
             this.timeLeft = init.timeLeft || 0;
             this.data = init.data || 0;
         }

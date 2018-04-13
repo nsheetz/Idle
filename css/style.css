@@ -232,6 +232,7 @@ canvas {
 }
 
 body {
+    font-family: EB Garamond;
     background-color: var(--ui-color-bg-base);
     color: #dddddd;
     position: absolute;

@@ -1,3 +1,12 @@
+2018-04-13 - V0.7.1
+* Improved Town Hall menu.
+* You now get 4 hours of Rarity Chance aura from beating a quest. Can only get 5 auras per day.
+* Rarity Chance aura in Quests is now infinite.
+* Improved some visual rounding.
+* Changed font to EB Garamond.
+* Import/Export should no longer cause crashes.
+* Code refactors/cleanup.
+
 2018-04-12 - V0.7.0
 * Added Auras.
 * You can now purchase a Rarity Chance aura with gold when starting a Quest to make it easier.

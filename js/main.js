@@ -1,66 +1,52 @@
 "use strict";
 
 let debug = (function() {
-    let model = {
-        modules: {
-            zones: null,
-            menu: null,
-            world: null
-        },
-        clock: 0,
-        start: Date.now(),
-        flags: {
-            clickedHelp: false,
-            lowPerformanceMode: false,
-            aurasExpanded: true,
-            enableDamageNumbers: true,
-        },
-        version: 12,
-        subVersion: 5,
-    }
+    let model = {};
 
     let assets = {
         imageVillage: new Image(),
         imageVillageLightmap: new Image()
     }
 
-    let floateys = null;
-
     assets.imageVillage.src = "img/village.png";
     assets.imageVillageLightmap.src = "img/village_lightmap.png";
 
+    let floateys = null;
     let paused = false;
-
     let itemCache = new Map();
 
     document.addEventListener('DOMContentLoaded', function() {
         floateys = new Floateys(null, document.getElementById("template_floatey"), document.getElementById("containerFloateys"));
 
         load();
+
         onLowPerformanceChecked(model.flags.lowPerformanceMode, true);
         onAurasExpandedClicked(model.flags.aurasExpanded, true);
         onEnableDamageNumbersChecked(model.flags.enableDamageNumbers, true);
     
-        //todo
-        if(model.modules.zones.zones[Zone.MAIN].modules.player.inventory.length === 0) {
-            model.modules.zones.zones[Zone.MAIN].modules.player.addItem(new Item().generateRandom(Zone.MAIN, null, 0, Item.WEAPON));
-            model.modules.zones.zones[Zone.MAIN].modules.player.addItem(new Item().generateRandom(Zone.MAIN, null, 0, Item.ARMOR));
+        //add starting items if inventory is empty
+        if(model.modules.zones.zones[Zone.Type.MAIN].modules.player.inventory.length === 0) {
+            model.modules.zones.zones[Zone.Type.MAIN].modules.player.addItem(new Item().generateRandom(Zone.Type.MAIN, null, 0, Item.Type.WEAPON));
+            model.modules.zones.zones[Zone.Type.MAIN].modules.player.addItem(new Item().generateRandom(Zone.Type.MAIN, null, 0, Item.Type.ARMOR));
         }
 
+        //firefox compatibility
         try {
             if(navigator.userAgent.indexOf('Firefox') > -1) {
                 document.getElementById("checkboxLowPerformance").disabled = true;
                 onLowPerformanceChecked(true, true);
             }
         } catch(e) {console.error(e)}
-    
+        
+        //aura container hide button
         try {
             document.getElementById("buttonHideExpandAuras").onclick = () => {
                 model.flags.aurasExpanded = !model.flags.aurasExpanded;
                 onAurasExpandedClicked(model.flags.aurasExpanded);
             }
         } catch(e) {console.error(e)}
-    
+        
+        //help button
         try {
             let buttonHelp = document.getElementById("buttonHelp");
             if(!model.flags.clickedHelp)
@@ -87,10 +73,18 @@ let debug = (function() {
                 model.modules.menu.create(Math.floor(window.innerWidth / 2 - window.innerWidth * 0.25), Math.floor(window.innerHeight / 2 - window.innerWidth * 0.11) - 100, 
                 "50vw", "22vw", "Help", description);
             }
+        } catch(e) {console.error(e)}
+
+        //battle button
+        try {
             document.getElementById("buttonBattle").onclick = e => {
                 let zone = model.modules.zones.getFocusedZone();
                 zone.modules.battle.startNewRun(zone.modules.player);
             }
+        } catch(e) {console.error(e)}
+
+        //pause button
+        try {
             document.getElementById("buttonPause").onclick = function(e) {
                 paused = !paused;
     
@@ -103,28 +97,34 @@ let debug = (function() {
                     this.innerHTML = "Pause";
                 }
             }
-    
+        } catch(e) {console.error(e)}
+
+        //switch zone buttons
+        try {
             document.getElementById("buttonZoneTypeSwitchLeft").onclick = function(e) {
                 let zones = model.modules.zones;
     
                 let type = zones.getZoneType(zones.getFocusedZone());
                 zones.changeFocusedZone(--type);
             }
-    
             document.getElementById("buttonZoneTypeSwitchRight").onclick = function(e) {
                 let zones = model.modules.zones;
     
                 let type = zones.getZoneType(zones.getFocusedZone());
                 zones.changeFocusedZone(++type);
             }
-    
+        } catch(e) {console.error(e)}
+        
+        //village button
+        try {
             document.getElementById("buttonToVillage").onclick = function(e) {
                 let date = new Date();
-                let zone = model.modules.zones.zones[Zone.MAIN];
+                let zone = model.modules.zones.zones[Zone.Type.MAIN];
                 let player = zone.modules.player;
                 let battle = zone.modules.battle;
+                let village = model.modules.village;
     
-                model.modules.menu.createVillage(player, battle, date, assets.imageVillage, assets.imageVillageLightmap, window.innerWidth, window.innerHeight, (rarityChanceAuraMult, goldSpent) => {
+                model.modules.menu.createVillage(village, player, battle, date, assets.imageVillage, assets.imageVillageLightmap, window.innerWidth, window.innerHeight, (rarityChanceAuraMult, goldSpent) => {
                     player.gold -= goldSpent;
                     player.emit("statsUpdated", player);
                     
@@ -133,21 +133,27 @@ let debug = (function() {
                     let maxLevel = battle.getQuestMaxLevel();
     
                     model.modules.zones.createNewQuest(maxLevel, maxLevel / 10 + 4);
-                    model.modules.zones.zones[Zone.QUEST].modules.player.addItem(new Item().generateRandom(Zone.QUEST, null, 0, Item.WEAPON));
-                    model.modules.zones.zones[Zone.QUEST].modules.player.addItem(new Item().generateRandom(Zone.QUEST, null, 0, Item.ARMOR));
+                    model.modules.zones.zones[Zone.Type.QUEST].modules.player.addItem(new Item().generateRandom(Zone.Type.QUEST, null, 0, Item.Type.WEAPON));
+                    model.modules.zones.zones[Zone.Type.QUEST].modules.player.addItem(new Item().generateRandom(Zone.Type.QUEST, null, 0, Item.Type.ARMOR));
     
                     if(rarityChanceAuraMult > 0) {
-                        model.modules.zones.zones[Zone.QUEST].modules.auras.addAura(Aura.RARITY_CHANCE_INCREASED, 1000*60*60*48, rarityChanceAuraMult);
+                        model.modules.zones.zones[Zone.Type.QUEST].modules.auras.addAura(Aura.RARITY_CHANCE_INCREASED, Infinity, rarityChanceAuraMult);
                     }
-                    model.modules.zones.changeFocusedZone(Zone.QUEST);
+                    model.modules.zones.changeFocusedZone(Zone.Type.QUEST);
                 });
             }
-    
+        } catch(e) {console.error(e)}
+        
+        //QUA button
+        try {
             document.getElementById("buttonChangeValueWeights").onclick = function(e) {
                 let zone = model.modules.zones.getFocusedZone();
                 model.modules.menu.createChangeValueWeights(zone.modules.player, window.innerWidth, window.innerHeight);
             }
-    
+        } catch(e) {console.error(e)}
+        
+        //export/import buttons
+        try {
             document.getElementById("buttonExportSave").onclick = function(e) {
                 save();
                 let content = "Here's your save string!<br>";
@@ -173,26 +179,42 @@ let debug = (function() {
                 };
                 textareaSave.focus();
             };
-    
+        } catch(e) {console.error(e)}
+        
+        //sort inventory button
+        try {
             document.getElementById("buttonInventorySort").onclick = e => {
                 let zone = model.modules.zones.getFocusedZone();
                 zone.modules.player.sortInventory();
             };
+        } catch(e) {console.error(e)}
+
+        //sell items button
+        try {
             document.getElementById("buttonInventoryDestroyWeakItems").onclick = e => {
                 let zone = model.modules.zones.getFocusedZone();
                 zone.modules.player.destroyWeakItems();
             };
-    
+        } catch(e) {console.error(e)}
+        
+        //low performance checkbox
+        try {
             document.getElementById("checkboxLowPerformance").onchange = function(e) {
                 model.flags.lowPerformanceMode = this.checked;
                 onLowPerformanceChecked(this.checked);
             }
-    
+        } catch(e) {console.error(e)}
+        
+        //damage numbers checkbox
+        try {
             document.getElementById("checkboxEnableDamageNumbers").onchange = function(e) {
                 model.flags.enableDamageNumbers = this.checked;
                 onEnableDamageNumbersChecked(this.checked);
             }
-    
+        } catch(e) {console.error(e)}
+        
+        //rarity chance button
+        try {
             document.getElementById("containerProgressRarityChance").onclick = e => {
                 let zone = model.modules.zones.getFocusedZone();
     
@@ -226,17 +248,7 @@ let debug = (function() {
     
                 model.modules.menu.create(e.clientX, e.clientY, "20vw", "auto", "Rarity Chance Breakdown", description);
             }
-        } catch(e) {
-            console.error(e);
-        }
-    
-        try {
-            let zone = model.modules.zones.getFocusedZone();
-            document.getElementById("textPlayerHealth").innerHTML = Utility.prettify(zone.modules.player.health);
-            document.getElementById("textPlayerMaxHealth").innerHTML = Utility.prettify(zone.modules.player.maxHealth);
-        } catch(e) {
-            console.error(e);
-        }
+        } catch(e) {console.error(e)}
 
         offlineLoop();
         window.requestAnimationFrame(coreLoop);
@@ -247,100 +259,26 @@ let debug = (function() {
         console.game(console.SAVED, "Game Saved!");
     }
 
-    function refreshEnemyStats(elem, enemy, zone) {
-        let arr = elem != null ? [{elem:elem,enemy:enemy}] : ((() => {
-            let arr = [];
-            let enemies = zone.modules.battle.enemies;
-            let l = enemies.length;
-            for(let i = 0; i < l; i++) {
-                let enemy = enemies[i];
-                arr[i] = {elem:document.getElementById("enemy" + enemy.id), enemy:enemy};
-            }
-            return arr;
-        })());
-
-        let l = arr.length;
-        for(let i = 0; i < l; i++) {
-            let obj = arr[i];
-            elem = obj.elem;
-            enemy = obj.enemy;
-
-            if(elem === null)
-                continue;
-
-            let elems = Array.from(elem.querySelectorAll("[data-id]"));
-            for(let elem in elems) {
-                elem = elems[elem];
-
-                switch(elem.dataset["id"]) {
-                case "textDamage":
-                    elem.innerHTML = Utility.prettify(Battle.getDamage(enemy.damage, enemy.stats.str, zone.modules.player.stats.def.total));
-                    break;
-                case "textDamageBase":
-                    elem.innerHTML = "(" + Utility.prettify(enemy.damage) + ")";
-                    break;
-                case "textSpeed":
-                    elem.innerHTML = Math.ceil(1 / (Battle.getEnemyInterval(enemy.damageSpeed, enemy.stats.agi, zone.modules.player.stats.agi.total) / 1000) * 10) / 10;
-                    break;
-                case "textHealth":
-                    elem.innerHTML = Utility.prettify(enemy.health) + "/" + Utility.prettify(enemy.maxHealth);
-                    break;
-                case "textStatCap":
-                    elem.innerHTML = Utility.prettify(Battle.getEnemyStatCeiling(zone.modules.battle.wave, Object.keys(enemy.stats).length));
-                }
-
-                for(let name in enemy.stats) {
-                    if(elem.dataset["id"] === "progress" + name) {
-                        elem.style.transform = Utility.getProgressBarTransformCSS(enemy.stats[name], Battle.getEnemyStatCeiling(zone.modules.battle.wave, Object.keys(enemy.stats).length));
-                    }
-                }
-            }
-        }
-    }
-
-    function refreshEnemyProgress(enemy) {
-        let node = document.getElementById("enemy" + enemy.id);
-        if(node != null) {
-            node = node.querySelector(".enemy-attack-progress");
-            node.style.transform = Utility.getProgressBarTransformCSS(enemy._battleCoordinatorClockSelf, enemy._battleCoordinatorClockSelfFinish);
-        }
-        
-    }
-
-    function refreshItemProgress(item) {
-        let elem = itemCache.get(item);
-        let node = elem.querySelector(".item-attack-progress");
-        node.style.transform = Utility.getProgressBarTransformCSS(item._battleClockSpeed, item._battleClockSpeedFinish);
-    
-        node = elem.querySelector(".item-regen-progress");
-        node.style.transform = Utility.getProgressBarTransformCSS(item._battleClockRegenSpeed, item._battleClockRegenSpeedFinish);
-    }
-
-    function refreshRarityChance(wave, auras) {
-        let containerProgressRarityChance = document.getElementById("containerProgressRarityChance");
-
-        let offsetOffset = auras.getAllMultipliersOfActiveAuras(Aura.RARITY_CHANCE_INCREASED);
-        if(offsetOffset.length > 0)
-            offsetOffset = offsetOffset.reduce((a, b) => a + b) * 10;
-        else
-            offsetOffset = 0;
-        let offset = Item.getRarityRollOffset(wave, offsetOffset);
-
-        containerProgressRarityChance.innerHTML = "";
-
-        let startingRarity = Item.getRarityRollStartingRarity(wave);
-
-        for(let i = 0; i < 5; i++) {
-            //TODO merge with item.js func maybe
-            let div = document.createElement("div");
-            div.className = "progress-bar item-rarity-" + (i + startingRarity);
-
-            div.style.transform = Utility.getProgressBarTransformCSS(offset, Math.pow(10, i));
-            containerProgressRarityChance.appendChild(div);
-        }
-    }
-
     function load() {
+        model = {
+            modules: {
+                zones: null,
+                menu: null,
+                world: null,
+                village: null
+            },
+            clock: 0,
+            start: Date.now(),
+            flags: {
+                clickedHelp: false,
+                lowPerformanceMode: false,
+                aurasExpanded: true,
+                enableDamageNumbers: true,
+            },
+            version: 12,
+            subVersion: 5,
+        }
+
         let s = localStorage.getItem("_save0_");
         s = JSON.parse(s);
 
@@ -386,14 +324,110 @@ let debug = (function() {
                 s.flags.aurasExpanded = true;
             }
 
-            model.modules.zones = new Zones(s.modules.zones);
+            model.modules.village = new Village(s.modules.village);
+            model.modules.zones = new Zones(s.modules.zones, model.modules.village);
             model.modules.menu = new Menu(s.modules.menu, document.getElementById("template_menu"), document.getElementById("containerMenus"));
             model.modules.world = new World(s.modules.world);
+            
         }
         else {
-            model.modules.zones = new Zones(null);
+            model.modules.village = new Village(null);
+            model.modules.zones = new Zones(null, model.modules.village);
             model.modules.menu = new Menu(null, document.getElementById("template_menu"), document.getElementById("containerMenus"));
             model.modules.world = new World(null);
+        }
+
+        var refreshEnemyStats = function(elem, enemy, zone) {
+            let arr = elem != null ? [{elem:elem,enemy:enemy}] : ((() => {
+                let arr = [];
+                let enemies = zone.modules.battle.enemies;
+                let l = enemies.length;
+                for(let i = 0; i < l; i++) {
+                    let enemy = enemies[i];
+                    arr[i] = {elem:document.getElementById("enemy" + enemy.id), enemy:enemy};
+                }
+                return arr;
+            })());
+    
+            let l = arr.length;
+            for(let i = 0; i < l; i++) {
+                let obj = arr[i];
+                elem = obj.elem;
+                enemy = obj.enemy;
+    
+                if(elem === null)
+                    continue;
+    
+                let elems = Array.from(elem.querySelectorAll("[data-id]"));
+                for(let elem in elems) {
+                    elem = elems[elem];
+    
+                    switch(elem.dataset["id"]) {
+                    case "textDamage":
+                        elem.innerHTML = Utility.prettify(Math.ceil(Battle.getDamage(enemy.damage, enemy.stats.str, zone.modules.player.stats.def.total)*10)/10);
+                        break;
+                    case "textDamageBase":
+                        elem.innerHTML = "(" + Utility.prettify(enemy.damage) + ")";
+                        break;
+                    case "textSpeed":
+                        elem.innerHTML = Math.ceil(1 / (Battle.getEnemyInterval(enemy.damageSpeed, enemy.stats.agi, zone.modules.player.stats.agi.total) / 1000) * 10) / 10;
+                        break;
+                    case "textHealth":
+                        elem.innerHTML = Utility.prettify(Math.ceil(enemy.health * 10)/10) + "/" + Utility.prettify(enemy.maxHealth);
+                        break;
+                    case "textStatCap":
+                        elem.innerHTML = Utility.prettify(Battle.getEnemyStatCeiling(zone.modules.battle.wave, Object.keys(enemy.stats).length));
+                    }
+    
+                    for(let name in enemy.stats) {
+                        if(elem.dataset["id"] === "progress" + name) {
+                            elem.style.transform = Utility.getProgressBarTransformCSS(enemy.stats[name], Battle.getEnemyStatCeiling(zone.modules.battle.wave, Object.keys(enemy.stats).length));
+                        }
+                    }
+                }
+            }
+        }
+    
+        var refreshEnemyProgress = function(enemy) {
+            let node = document.getElementById("enemy" + enemy.id);
+            if(node != null) {
+                node = node.querySelector(".enemy-attack-progress");
+                node.style.transform = Utility.getProgressBarTransformCSS(enemy._battleCoordinatorClockSelf, enemy._battleCoordinatorClockSelfFinish);
+            }
+            
+        }
+    
+        var refreshItemProgress = function(item) {
+            let elem = itemCache.get(item);
+            let node = elem.querySelector(".item-attack-progress");
+            node.style.transform = Utility.getProgressBarTransformCSS(item._battleClockSpeed, item._battleClockSpeedFinish);
+        
+            node = elem.querySelector(".item-regen-progress");
+            node.style.transform = Utility.getProgressBarTransformCSS(item._battleClockRegenSpeed, item._battleClockRegenSpeedFinish);
+        }
+    
+        var refreshRarityChance = function(wave, auras) {
+            let containerProgressRarityChance = document.getElementById("containerProgressRarityChance");
+    
+            let offsetOffset = auras.getAllMultipliersOfActiveAuras(Aura.RARITY_CHANCE_INCREASED);
+            if(offsetOffset.length > 0)
+                offsetOffset = offsetOffset.reduce((a, b) => a + b) * 10;
+            else
+                offsetOffset = 0;
+            let offset = Item.getRarityRollOffset(wave, offsetOffset);
+    
+            containerProgressRarityChance.innerHTML = "";
+    
+            let startingRarity = Item.getRarityRollStartingRarity(wave);
+    
+            for(let i = 0; i < 5; i++) {
+                //TODO merge with item.js func maybe
+                let div = document.createElement("div");
+                div.className = "progress-bar item-rarity-" + (i + startingRarity);
+    
+                div.style.transform = Utility.getProgressBarTransformCSS(offset, Math.pow(10, i));
+                containerProgressRarityChance.appendChild(div);
+            }
         }
 
         itemCache = new Map();
@@ -403,11 +437,11 @@ let debug = (function() {
             model.modules.world.init();
             
             let type = model.modules.zones.getZoneType(zone);
-            document.getElementById("textZoneType").innerHTML = type === Zone.MAIN ? "Main Zone" : type === Zone.QUEST ? "Quest Zone" : "Limbo";
+            document.getElementById("textZoneType").innerHTML = type === Zone.Type.MAIN ? "Main Zone" : type === Zone.Type.QUEST ? "Quest Zone" : "Limbo";
             document.getElementById("textZoneType").innerHTML += zone.ended ? " (Finished)" : "";
         });
 
-        let zone = model.modules.zones.zones[Zone.MAIN];
+        let zone = model.modules.zones.zones[Zone.Type.MAIN];
 
         zone.modules.player.on("itemsChanged", function (player, items, allItems) {
             try {
@@ -445,17 +479,15 @@ let debug = (function() {
                     let fragment;
                     let nextChild = 0;
 
-                    if(item.type === Item.WEAPON) {
+                    if(item.type === Item.Type.WEAPON) {
                         fragment = document.getElementById("template_item_weapon").content.cloneNode(true);
-                        fragment.children[0].children[0].children[0].innerHTML = Utility.prettify(item.getValue(player.weights));
                         fragment.children[0].children[1].children[0].innerHTML = Math.floor(item.damageSpeed * 10) / 10;
                         fragment.children[0].children[2].children[0].innerHTML = Utility.prettify(item.damage);
                         fragment.children[0].children[3].children[0].innerHTML = item.reach;
                         nextChild = 4;
                     }
-                    else if(item.type === Item.ARMOR) {
+                    else if(item.type === Item.Type.ARMOR) {
                         fragment = document.getElementById("template_item_armor").content.cloneNode(true);
-                        fragment.children[0].children[0].children[0].innerHTML = Utility.prettify(item.getValue(player.weights));
                         fragment.children[0].children[1].children[0].innerHTML = Utility.prettify(item.health);
                         fragment.children[0].children[2].children[0].innerHTML = Utility.prettify(item.regen);
                         fragment.children[0].children[3].children[0].innerHTML = item.regenSpeed;
@@ -463,9 +495,10 @@ let debug = (function() {
                     }
                     else {
                         fragment = document.getElementById("template_item_default").content.cloneNode(true);
-                        fragment.children[0].children[0].children[0].innerHTML = Utility.prettify(item.getValue(player.weights));
                         nextChild = 1;
                     }
+
+                    fragment.children[0].children[0].children[0].innerHTML = Utility.prettify(Math.floor(item.getValue(player.weights) * 10)/10);
 
                     let height = Math.ceil(100 / Object.keys(item.stats).length * 100) / 100;
                     for(let name in item.stats) {
@@ -488,17 +521,17 @@ let debug = (function() {
                     itemCache.set(item, elem);
 
                     switch(item._inventory.id) {
-                    case Player.INVENTORY:
-                        if(item.type === Item.WEAPON)
+                    case Player.Inventory.INVENTORY:
+                        if(item.type === Item.Type.WEAPON)
                             containerInventoryWeapon.appendChild(fragment);
                         else
                             containerInventoryArmor.appendChild(fragment);
                         break;
-                    case Player.EQUIPMENT:
+                    case Player.Inventory.EQUIPMENT:
                         let slotElem = document.getElementById("containerCharacterItemSlot" + item._inventory.data);
                         slotElem.appendChild(fragment);
                         break;
-                    case Player.BACKPACK:
+                    case Player.Inventory.BACKPACK:
                         document.getElementById("containerItemBackpack").appendChild(fragment);
                     }
 
@@ -534,7 +567,7 @@ let debug = (function() {
                 for(let i = 0; i < l; i++) {
                     let item = player.inventory[i];
 
-                    if(item._inventory.id !== Player.EQUIPMENT) 
+                    if(item._inventory.id !== Player.Inventory.EQUIPMENT) 
                         continue;
 
                     if(item == null)
@@ -625,7 +658,7 @@ let debug = (function() {
 
                 let elem = document.getElementById("enemy" + enemy.id);
                 if(elem != null) {
-                    elem.querySelector(".progress-bar-text").innerHTML = Utility.prettify(Math.max(0, enemy.health)) + "/" + Utility.prettify(enemy.maxHealth);
+                    elem.querySelector(".progress-bar-text").innerHTML = Utility.prettify(Math.max(0, Math.ceil(enemy.health*10)/10)) + "/" + Utility.prettify(enemy.maxHealth);
                     elem.querySelector(".progress-bar").style.transform = Utility.getProgressBarTransformCSS(enemy.health, enemy.maxHealth);
                 }
             } catch(e) {console.error(e);}
@@ -648,7 +681,6 @@ let debug = (function() {
                 refreshEnemyProgress(enemy);
             } catch(e) {console.error(e);}
         });
-
 
         zone.modules.battle.on("enemiesRemoved", enemies => {
             try {
@@ -757,9 +789,9 @@ let debug = (function() {
 
         model.modules.world.on("timeUpdated", (minCol, maxCol, hours, minutes) => {
             let type = model.modules.zones.getZoneType(model.modules.zones.getFocusedZone());
-            if(type === Zone.MAIN)
+            if(type === Zone.Type.MAIN)
                 document.getElementById("containerWorld").style.backgroundColor = "rgb(" + minCol + "," + maxCol + "," + minCol + ")";
-            else if(type === Zone.QUEST)
+            else if(type === Zone.Type.QUEST)
                 document.getElementById("containerWorld").style.backgroundColor = "rgb(" + maxCol + "," + maxCol + "," + minCol + ")";
             else
                 document.getElementById("containerWorld").style.backgroundColor = "rgb(" + 255 + "," + 255 + "," + 255 + ")";
@@ -831,6 +863,7 @@ let debug = (function() {
 
             model.modules.world.update(frameTime);
             model.modules.menu.update(frameTime);
+            model.modules.village.update(frameTime);
 
             floateys.update(frameTime);
 

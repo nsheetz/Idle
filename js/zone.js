@@ -40,8 +40,12 @@ const Zone = ((window, document) => {
         }
     }
 
-    Zone.MAIN = 0;
-    Zone.QUEST = 1;
+    const Type = Object.freeze({
+        MAIN: 0,
+        QUEST: 1,
+    });
+
+    Zone.Type = Type;
     
     return Zone;
 })(null, null);

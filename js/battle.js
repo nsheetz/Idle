@@ -141,7 +141,7 @@ const Battle = ((window, document) => {
 
             let jl = player.inventory.length;
             for(let j = 0; j < jl; j++) {
-                if(player.inventory[j]._inventory.id === Player.EQUIPMENT)
+                if(player.inventory[j]._inventory.id === Player.Inventory.EQUIPMENT)
                     equippedItems.push(player.inventory[j]);
             }
 
