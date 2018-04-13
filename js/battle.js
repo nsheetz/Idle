@@ -70,7 +70,7 @@ const Battle = ((window, document) => {
             }
 
             let randomOffset = Math.ceil(this.wave / 10);
-            let random = Utility.getRandomInt(randomOffset, 4 + randomOffset);
+            let random = Utility.getRandomInt(1 + randomOffset, 7 + randomOffset);
 
             for(let i = 0; i < random; i++) {
                 let hp = Math.floor(Math.triangular((this.wave) / 10) * 100);

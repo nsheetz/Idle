@@ -173,7 +173,15 @@ const Item = ((window, document) => {
         }
 
         getValue(weights) {
-            let totalStats = 0;
+            //wDPS * DPS + wHP * HP + wRPS * RPS + wSTR * STR + wDEF * DEF + wAGI * AGI
+            // stats = [dps,hp,rps,str,def,agi,hwe];
+
+            let dps = this.damage * this.damageSpeed * this.reach;
+            let rps = this.regen * this.regenSpeed;
+
+            return 10 * (weights[0]*dps + weights[1]*this.health + weights[2]*rps + weights[3]*this.stats.str + weights[4]*this.stats.def + weights[5]*this.stats.agi);
+
+            /*let totalStats = 0;
             let maxStats = 0;
             for(let name in this.stats) {
                 totalStats += this.stats[name];
@@ -218,7 +226,7 @@ const Item = ((window, document) => {
             }
             else {
                 return 0;
-            }
+            }*/
         }
     }
 

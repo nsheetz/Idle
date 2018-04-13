@@ -276,7 +276,7 @@ let debug = (function() {
                 enableDamageNumbers: true,
             },
             version: 12,
-            subVersion: 5,
+            subVersion: 6,
         }
 
         let s = localStorage.getItem("_save0_");
@@ -322,6 +322,14 @@ let debug = (function() {
 
             if(s.subVersion <= 4) {
                 s.flags.aurasExpanded = true;
+            }
+
+            if(s.subVersion <= 5) {
+                let zones = s.modules.zones.zones;
+                for(let i = 0; i < zones.length; i++) {
+                    let zone = zones[i];
+                    zone.modules.player.weights = null;
+                }
             }
 
             model.modules.village = new Village(s.modules.village);
@@ -920,7 +928,9 @@ let debug = (function() {
     }
 
     return {
-        model,
+        get model() {
+            return model
+        },
         offsetFrameClock: function(num) {
             frameClock += num;
         },

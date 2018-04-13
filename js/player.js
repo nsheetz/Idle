@@ -66,15 +66,7 @@ const Player = ((window, document) => {
             this.frenzy.value = init.frenzy.value || 0;
             this.frenzy.max = init.frenzy.max || 0;
 
-            init.weights = init.weights || {}
-            this.weights = {};
-            this.weights.damage = init.weights.damage || 1;
-            this.weights.reach = init.weights.reach || 1;
-            this.weights.damageSpeed = init.weights.damageSpeed || 1;
-            this.weights.health = init.weights.health || 1;
-            this.weights.regen = init.weights.regen || 1;
-            this.weights.regenSpeed = init.weights.regenSpeed || 1;
-            this.weights.playerStats = init.weights.playerStats || 1;
+            this.weights = init.weights || [];
 
             this.inventory = init.inventory || [];
             for(let i = 0; i < this.inventory.length; i++) {
@@ -310,6 +302,9 @@ const Player = ((window, document) => {
 
             this.rage.max = 100;
             this.frenzy.max = 100;
+
+            let dps = 0;
+            let rps = 0;
             
             let l = this.inventory.length;
             for(let i = 0; i < l; i++) {
@@ -321,6 +316,9 @@ const Player = ((window, document) => {
                 this.damage += item.damage;
                 this.reach += item.reach;
                 this.maxHealth += item.health;
+
+                dps += item.damage * item.reach * item.damageSpeed;
+                rps += item.regen * item.regenSpeed;
 
                 for(let name in this.stats)
                     this.stats[name].item += item.stats[name];
@@ -336,7 +334,10 @@ const Player = ((window, document) => {
     
             if(this.health > this.maxHealth)
                 this.health = this.maxHealth;
-    
+
+            //[dps,hp,rps,str,def,agi,hwe]
+            this.weights = Player.getWeights([dps, this.maxHealth, rps, this.stats.str.total, this.stats.def.total, this.stats.agi.total, this[this.sZone].modules.battle.highestWave]);
+            
             this.emit("statsUpdated", this);
             return true;
         }
@@ -469,6 +470,22 @@ const Player = ((window, document) => {
 
         static getGoldCostOfQuestRarityChanceAuraMultiplier(targetZone, mult) {
             return 200000 * Math.pow(10, targetZone / 10) * (mult - 1);
+        }
+
+        //https://pastebin.com/SjhBJSzD/
+        // stats = [dps,hp,rps,str,def,agi,hwe];
+        static getWeights(stats){const VF=1.01;const DEFAULT_WEIGHTS=[0.01,0.002,0.1,0.02,0.02,0.02];let base=Player.statScore(stats);if(!Number.isFinite(base)){return DEFAULT_WEIGHTS}
+            let weights=[];for(let i=0;i<(stats.length-1);i++){let stat=stats[i];let testStat=stat*VF;if(stat===0){testStat=VF-1}
+            stats[i]=testStat;let score=Player.statScore(stats);if(!Number.isFinite(score)){return DEFAULT_WEIGHTS}
+            weights[i]=(score-base)/(testStat-stat);stats[i]=stat}
+            return weights
+        }
+        static statScore(stats){let dps,hp,rps,str,def,agi,hwe;[dps,hp,rps,str,def,agi,hwe]=stats;let v=hwe/10;let statAvg=75+35*v;let statCap=3*statAvg;let A=agi/statCap;let A2=A*A;let A3=A2*A;let pA=A+A2
+            if(A>1/3){pA=(5/2)*(A-(1/2)*A2-1/10)}
+            let pB=1-pA;let eBltA=(1/pA)*((1/2)*A2+(2/3)*A3);if(A>1/3){eBltA=(1/pA)*(-1/36+(5/2)*((1/2)*A2-(1/3)*A3))}
+            let eBgtA=(1/pB)*(7/18-(1/2)*A2-(2/3)*A3);if(A>1/3){eBgtA=(1/pB)*(5/12+(5/2)*((1/3)*A3-(1/2)*A2))}
+            eBltA*=statCap;eBgtA*=statCap;A*=statCap;let enemyDPSMultAgi=1-pA*(1-Math.pow(8,(eBltA-A)/(eBltA+A)));let enemyHPMultAgi=1/(1-pB*(1-Math.pow(8,(A-eBgtA)/(A + eBgtA)) ) );
+            let enemyDPSMultStr=Math.pow(8,(statAvg-def)/(statAvg+def));let enemyHPMultDef=Math.pow(8,(statAvg-str)/(statAvg+str));let vG=v*(v+1)*(v+2)/2;let cHP=20*100*1.25;let cDPS=10/2;let eHP=enemyHPMultAgi*enemyHPMultDef*cHP*vG;let eDPS=enemyDPSMultAgi*enemyDPSMultStr*cDPS*vG;let v2=v*v;let v3=v2*v;let vp1=3*v2+6*v+2;let vp2=Math.log(8)*(v3+3*v2+2*v)*70;let dHP=(1/10)*enemyHPMultAgi*enemyHPMultDef*cHP/2*(vp1+vp2*str/Math.pow((statAvg+str),2));let dDPS=(1/10)*enemyDPSMultAgi*enemyDPSMultStr*cDPS/2*(vp1+vp2*def/Math.pow((statAvg+def),2));let qA=dHP*dDPS;let qB=(eDPS-rps)*dHP+eHP;let qC=(eDPS-rps)*eHP-hp*dps;let dW=(1/(2*qA))*(-qB+Math.sqrt(qB*qB-4*qA*qC));return hwe+dW
         }
     }
 
